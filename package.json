@@ -22,7 +22,8 @@
     "stack:up": "docker compose up -d --build",
     "stack:down": "docker compose down",
     "stack:config": "docker compose config",
-    "ai:test": "pnpm --filter @bcip/ai test"
+    "ai:test": "pnpm --filter @bcip/ai test",
+    "push:all": "bash infrastructure/scripts/push-all.sh"
   },
   "devDependencies": {
     "prettier": "3.6.2",
