@@ -1,0 +1,25 @@
+---
+description: BCIP architecture and repository boundaries
+alwaysApply: true
+---
+
+# Architecture Rules
+
+Use a pnpm/Turborepo monorepo.
+
+- `apps/web`: Next.js 16 App Router, TypeScript strict mode.
+- `services/ai`: FastAPI API and Celery worker.
+- `packages/db`: Drizzle schema, migrations, and typed queries.
+- `packages/domain`: domain services independent of UI.
+- `packages/contracts`: Zod schemas and generated OpenAPI types.
+- `packages/ui`: accessible shared UI.
+
+Use PostgreSQL 18 with pgvector, Redis, and S3-compatible object storage.
+
+The web app is a modular monolith. Do not create separate microservices for Motif Explorer, Hue Seer, Lasem Guru, or Dress Weaver in Year 1.
+
+The browser must not call the AI service directly. Next.js is the authenticated backend-for-frontend.
+
+Every protected operation validates authorization inside its server action, route handler, and/or domain service. Proxy checks are not sufficient authorization.
+
+Long-running image, embedding, export, and rendering work must be asynchronous and idempotent.

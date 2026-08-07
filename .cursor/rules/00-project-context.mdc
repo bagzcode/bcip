@@ -1,0 +1,21 @@
+---
+description: BCIP product mission and non-negotiable context
+alwaysApply: true
+---
+
+# BCIP Project Context
+
+Build a multimodal, culturally grounded batik design-intelligence ecosystem connecting heritage data, color science, explainable AI, and fashion application.
+
+The four user-facing modules are Motif Explorer, Hue Seer, Lasem Guru, and Dress Weaver. Shared modules are Research Lab and Governance Console.
+
+Pilot domain: Batik Lasem. Never assume Batik Lasem meanings or design rules are universal to all batik traditions.
+
+Non-negotiable rules:
+
+1. Never fabricate cultural facts or seed them as real facts. Demo cultural content must be clearly labelled fictional/demo.
+2. Every cultural claim needs provenance, scope, confidence, access policy, and review status.
+3. Access restrictions apply to database queries, search results, embeddings, AI context, logs, exports, and generated derivatives.
+4. Preserve human authorship. Recommendations are editable suggestions, not authoritative design decisions.
+5. Distinguish calibrated scientific color analysis from exploratory analysis of ordinary photographs.
+6. Build publication-grade reproducibility: dataset version, asset version, algorithm/model version, parameters, prompt/policy version, and timestamps.

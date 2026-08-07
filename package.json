@@ -1,0 +1,32 @@
+{
+  "name": "bcip",
+  "private": true,
+  "packageManager": "pnpm@10.14.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "pnpm --filter @bcip/e2e test:e2e",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "pnpm --filter @bcip/db generate",
+    "db:migrate": "pnpm --filter @bcip/db migrate",
+    "db:seed": "pnpm --filter @bcip/db seed",
+    "infra:up": "docker compose up -d postgres redis object-storage",
+    "infra:down": "docker compose down",
+    "stack:up": "docker compose up -d --build",
+    "stack:down": "docker compose down",
+    "stack:config": "docker compose config",
+    "ai:test": "pnpm --filter @bcip/ai test"
+  },
+  "devDependencies": {
+    "prettier": "3.6.2",
+    "turbo": "2.10.8",
+    "typescript": "5.9.2"
+  }
+}

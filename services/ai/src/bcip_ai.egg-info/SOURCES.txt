@@ -1,0 +1,13 @@
+README.md
+pyproject.toml
+src/bcip_ai/__init__.py
+src/bcip_ai/main.py
+src/bcip_ai/schemas.py
+src/bcip_ai/settings.py
+src/bcip_ai/worker.py
+src/bcip_ai.egg-info/PKG-INFO
+src/bcip_ai.egg-info/SOURCES.txt
+src/bcip_ai.egg-info/dependency_links.txt
+src/bcip_ai.egg-info/requires.txt
+src/bcip_ai.egg-info/top_level.txt
+tests/test_health_and_color.py

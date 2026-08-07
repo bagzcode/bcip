@@ -1,0 +1,81 @@
+# Blueprint only. Cursor must resolve and pin stable image versions during Phase 0.
+# Use the current Compose Specification; do not add an obsolete top-level version key.
+name: bcip
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg18
+    environment:
+      POSTGRES_DB: bcip
+      POSTGRES_USER: bcip
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bcip -d bcip"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  object-storage:
+    # Replace with a pinned, approved S3-compatible development image.
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-change-me}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-change-me}
+    volumes:
+      - object_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/web.Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+  ai-api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/ai.Dockerfile
+    command: ["uvicorn", "bcip_ai.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  ai-worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/ai.Dockerfile
+    command: ["celery", "-A", "bcip_ai.worker.app", "worker", "--loglevel=INFO"]
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  object_data:

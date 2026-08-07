@@ -1,0 +1,10 @@
+{
+  "extends": "@bcip/config/tsconfig.library.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "outDir": "dist",
+    "types": ["node"]
+  },
+  "include": ["src", "drizzle.config.ts", "tests"]
+}

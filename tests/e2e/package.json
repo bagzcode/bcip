@@ -1,0 +1,14 @@
+{
+  "name": "@bcip/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test",
+    "lint": "echo 'no lint'",
+    "typecheck": "echo 'no typecheck'",
+    "build": "echo 'no build'"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.54.2"
+  }
+}

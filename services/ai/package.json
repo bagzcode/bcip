@@ -1,0 +1,12 @@
+{
+  "name": "@bcip/ai",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "uvicorn bcip_ai.main:app --reload --host 0.0.0.0 --port 8000",
+    "test": "bash -lc 'if [ -x .venv/bin/python ]; then exec .venv/bin/python -m pytest; else exec python3 -m pytest; fi'",
+    "typecheck": "python3 -c \"print('python typecheck deferred to ruff/mypy in later phase')\"",
+    "lint": "python3 -c \"print('python lint deferred to ruff in later phase')\"",
+    "build": "python3 -c \"print('ai package has no JS build')\""
+  }
+}
