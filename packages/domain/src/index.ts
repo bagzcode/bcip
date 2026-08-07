@@ -7,3 +7,4 @@ export * from './design';
 export * from './research';
 export * from './knowledge';
 export * from './color';
+export * from './dye-predict';
