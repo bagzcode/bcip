@@ -56,6 +56,7 @@ import {
   buildPreviewExportMetadata,
   canonicalizeDesignDocument,
   checksumDesignDocument,
+  defaultPatternSettings,
   DEMO_FICTIONAL_LABEL,
   RESEARCH_RANDOMIZATION_ALGORITHM,
   RESEARCH_SOFTWARE_VERSION,
@@ -954,6 +955,11 @@ async function main() {
         isDemoFictional: true,
         label: 'v1 lattice placement',
       },
+      pattern: defaultPatternSettings({
+        designId: 'aaron',
+        units: 'metric',
+        view: 'motif',
+      }),
     });
 
     const designV2 = canonicalizeDesignDocument({

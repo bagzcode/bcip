@@ -224,6 +224,65 @@ h3 {
   font-size: 0.8rem;
 }
 
+/* FreeSewing-style pattern draft stage */
+.dw-pattern-panel .dw-meas-grid {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.5rem;
+  max-height: 28rem;
+  overflow: auto;
+  padding-right: 0.25rem;
+}
+
+.dw-draft {
+  min-width: 0;
+}
+
+.dw-draft-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.dw-draft-viewport {
+  min-height: 28rem;
+  max-height: min(70vh, 44rem);
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(30, 58, 95, 0.06), transparent 45%),
+    linear-gradient(180deg, rgba(243, 235, 224, 0.9), rgba(255, 255, 255, 0.55));
+  border: 1px solid var(--bcip-border);
+  position: relative;
+}
+
+.dw-draft-viewport:active {
+  cursor: grabbing;
+}
+
+.dw-draft-surface {
+  transform-origin: 0 0;
+  width: max-content;
+  user-select: none;
+}
+
+.dw-draft-surface svg {
+  display: block;
+  max-width: none;
+}
+
+.dw-draft-notes {
+  margin: 0.65rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--bcip-muted);
+  font-size: 0.85rem;
+}
+
+
 .sr-only {
   position: absolute;
   width: 1px;

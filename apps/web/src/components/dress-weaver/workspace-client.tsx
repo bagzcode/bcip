@@ -1,15 +1,19 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import type { DesignDocument } from '@bcip/contracts';
+import type { DesignDocument, DesignPatternSettings, PatternViewMode } from '@bcip/contracts';
+import { resolvePatternSettings } from '@bcip/domain';
 import { Badge, Button } from '@bcip/ui';
 import type { DesignProjectDetail } from '@/lib/dress-weaver';
 import {
+  draftPatternAction,
   exportDesignPreviewAction,
   saveDesignVersionAction,
 } from '@/lib/dress-weaver-actions';
 import { DesignCanvas } from './design-canvas';
+import { DraftViewer } from './draft-viewer';
+import { PatternPanel } from './pattern-panel';
 
 type PlaceableMotif = {
   id: string;
@@ -18,6 +22,14 @@ type PlaceableMotif = {
   summary: string;
   isDemoFictional: boolean;
 };
+
+const VIEW_MODES: Array<{ id: PatternViewMode; label: string }> = [
+  { id: 'draft', label: 'Draft' },
+  { id: 'measurements', label: 'Measurements' },
+  { id: 'motif', label: 'Motif' },
+  { id: 'compare', label: 'Compare' },
+  { id: 'export', label: 'Export' },
+];
 
 export function DressWeaverWorkspaceClient({
   project,
@@ -34,24 +46,92 @@ export function DressWeaverWorkspaceClient({
   const [compareB, setCompareB] = useState(
     project.versions[project.versions.length - 1]?.versionNumber ?? 1,
   );
-  const [mode, setMode] = useState<'edit' | 'compare'>('edit');
   const [status, setStatus] = useState<string | null>(null);
   const [exportJson, setExportJson] = useState<string | null>(null);
+  const [draftSvg, setDraftSvg] = useState<string | null>(null);
+  const [draftNotes, setDraftNotes] = useState<string[]>([]);
+  const [drafting, setDrafting] = useState(false);
 
   const workingDesign = useMemo(() => {
     const version = project.versions.find((v) => v.versionNumber === activeVersion);
     return version?.design ?? latest?.design;
   }, [project.versions, activeVersion, latest]);
 
-  const [draft, setDraft] = useState<DesignDocument | null>(workingDesign ?? null);
+  const [draft, setDraft] = useState<DesignDocument | null>(() => {
+    if (!workingDesign) return null;
+    return withResolvedPattern(workingDesign);
+  });
 
-  const designForCanvas = draft ?? workingDesign;
+  const designForCanvas = draft ?? (workingDesign ? withResolvedPattern(workingDesign) : null);
+  const pattern = designForCanvas
+    ? resolvePatternSettings(designForCanvas.pattern)
+    : resolvePatternSettings(undefined);
+  const [view, setView] = useState<PatternViewMode>(pattern.view ?? 'draft');
+
+  useEffect(() => {
+    if (workingDesign) {
+      setDraft(withResolvedPattern(workingDesign));
+    }
+  }, [workingDesign]);
+
+  useEffect(() => {
+    if (view !== 'draft' && view !== 'measurements' && view !== 'export') return;
+    let cancelled = false;
+    setDrafting(true);
+    void draftPatternAction({
+      designId: pattern.designId,
+      units: pattern.units,
+      measurementSet: pattern.measurementSet,
+      options: pattern.options,
+    }).then((result) => {
+      if (cancelled) return;
+      setDrafting(false);
+      if (!result.ok || !result.data) {
+        setStatus(result.message);
+        return;
+      }
+      setDraftSvg(result.data.svg);
+      setDraftNotes(result.data.notes);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // Re-draft when measurement set / design / units change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional pattern fingerprint
+  }, [
+    view,
+    pattern.designId,
+    pattern.units,
+    pattern.measurementSet.name,
+    JSON.stringify(pattern.measurementSet.measurements),
+    JSON.stringify(pattern.options),
+  ]);
+
   if (!designForCanvas) {
     return <p>No design versions yet.</p>;
   }
 
   const versionA = project.versions.find((v) => v.versionNumber === compareA);
   const versionB = project.versions.find((v) => v.versionNumber === compareB);
+
+  function updatePattern(next: DesignPatternSettings) {
+    if (!draft && !designForCanvas) return;
+    const base = draft ?? designForCanvas!;
+    setDraft({
+      ...base,
+      pattern: { ...next, view },
+    });
+  }
+
+  function changeView(next: PatternViewMode) {
+    setView(next);
+    if (!designForCanvas) return;
+    const base = draft ?? designForCanvas;
+    setDraft({
+      ...base,
+      pattern: { ...resolvePatternSettings(base.pattern), view: next },
+    });
+  }
 
   function onSave() {
     if (!draft) return;
@@ -61,6 +141,10 @@ export function DressWeaverWorkspaceClient({
         versionLabel: `v${(latest?.versionNumber ?? 0) + 1} workspace save`,
         design: {
           ...draft,
+          pattern: {
+            ...resolvePatternSettings(draft.pattern),
+            view,
+          },
           meta: {
             ...draft.meta,
             label: `v${(latest?.versionNumber ?? 0) + 1} workspace save`,
@@ -77,7 +161,7 @@ export function DressWeaverWorkspaceClient({
     });
   }
 
-  function onExport() {
+  function onExportMetadata() {
     startTransition(async () => {
       const result = await exportDesignPreviewAction({
         projectCode: project.publicCode,
@@ -91,7 +175,19 @@ export function DressWeaverWorkspaceClient({
       }
       setExportJson(JSON.stringify(result.data.exportMetadata, null, 2));
       setStatus(`Export metadata ready · ${result.data.attributionText}`);
+      changeView('export');
     });
+  }
+
+  function onDownloadSvg() {
+    if (!draftSvg) return;
+    const blob = new Blob([draftSvg], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${project.publicCode}-${pattern.designId}-${pattern.measurementSet.name}.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -101,7 +197,8 @@ export function DressWeaverWorkspaceClient({
           <Badge>DEMO / FICTIONAL — NOT RESEARCH DATA</Badge>
           <h1 style={{ margin: '0.5rem 0 0.25rem' }}>{project.title}</h1>
           <p className="dw-muted">
-            {project.publicCode} · template {project.garmentTemplateCode} · review{' '}
+            {project.publicCode} · template {project.garmentTemplateCode} · pattern{' '}
+            {pattern.designId} · set “{pattern.measurementSet.name}” · review{' '}
             {latest?.reviewStatus ?? 'draft'}
           </p>
           {project.reviewNotes ? (
@@ -111,59 +208,77 @@ export function DressWeaverWorkspaceClient({
           ) : null}
         </div>
         <div className="dw-actions">
-          <Button
-            type="button"
-            variant={mode === 'edit' ? 'primary' : 'ghost'}
-            onClick={() => setMode('edit')}
-          >
-            Edit
-          </Button>
-          <Button
-            type="button"
-            variant={mode === 'compare' ? 'primary' : 'ghost'}
-            onClick={() => setMode('compare')}
-          >
-            Compare
-          </Button>
-          <Button type="button" onClick={onSave} disabled={pending || mode !== 'edit'}>
+          {VIEW_MODES.map((mode) => (
+            <Button
+              key={mode.id}
+              type="button"
+              variant={view === mode.id ? 'primary' : 'ghost'}
+              onClick={() => changeView(mode.id)}
+            >
+              {mode.label}
+            </Button>
+          ))}
+          <Button type="button" onClick={onSave} disabled={pending || view === 'compare'}>
             Save version
-          </Button>
-          <Button type="button" variant="ghost" onClick={onExport} disabled={pending}>
-            Export preview metadata
           </Button>
         </div>
       </header>
 
-      {status ? <p className="dw-status" role="status">{status}</p> : null}
+      {status ? (
+        <p className="dw-status" role="status">
+          {status}
+        </p>
+      ) : null}
 
-      {mode === 'edit' ? (
-        <>
-          <label className="dw-field" style={{ maxWidth: '16rem' }}>
-            <span>Working from version</span>
-            <select
-              value={activeVersion}
-              onChange={(e) => {
-                const n = Number(e.target.value);
-                setActiveVersion(n);
-                const v = project.versions.find((x) => x.versionNumber === n);
-                if (v) setDraft(v.design);
-              }}
-            >
-              {project.versions.map((v) => (
-                <option key={v.id} value={v.versionNumber}>
-                  v{v.versionNumber} — {v.versionLabel}
-                </option>
-              ))}
-            </select>
-          </label>
-          <DesignCanvas
-            template={project.template}
-            initialDesign={designForCanvas}
-            motifs={motifs}
-            onDesignChange={setDraft}
+      {view !== 'compare' ? (
+        <label className="dw-field" style={{ maxWidth: '16rem', marginBottom: '0.75rem' }}>
+          <span>Working from version</span>
+          <select
+            value={activeVersion}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              setActiveVersion(n);
+              const v = project.versions.find((x) => x.versionNumber === n);
+              if (v) setDraft(withResolvedPattern(v.design));
+            }}
+          >
+            {project.versions.map((v) => (
+              <option key={v.id} value={v.versionNumber}>
+                v{v.versionNumber} — {v.versionLabel}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+
+      {view === 'draft' || view === 'measurements' ? (
+        <div className="dw-workspace">
+          <PatternPanel pattern={pattern} onChange={updatePattern} />
+          <DraftViewer
+            svg={draftSvg}
+            loading={drafting}
+            notes={draftNotes}
+            setName={pattern.measurementSet.name}
+            onExportSvg={onDownloadSvg}
           />
-        </>
-      ) : (
+        </div>
+      ) : null}
+
+      {view === 'motif' ? (
+        <DesignCanvas
+          template={project.template}
+          initialDesign={designForCanvas}
+          motifs={motifs}
+          onDesignChange={(next) =>
+            setDraft({
+              ...next,
+              pattern: { ...pattern, view: 'motif' },
+            })
+          }
+        />
+      ) : null}
+
+      {view === 'compare' ? (
         <div className="dw-compare">
           <div className="dw-compare-controls">
             <label className="dw-field">
@@ -196,27 +311,53 @@ export function DressWeaverWorkspaceClient({
             ) : null}
           </div>
         </div>
-      )}
+      ) : null}
 
-      {exportJson ? (
+      {view === 'export' ? (
         <section className="dw-export panel">
-          <h2>Preview export metadata</h2>
+          <h2>Export</h2>
           <p className="dw-muted">
-            Medium-res preview metadata with attribution / watermark rules. Binary PNG upload to
-            object storage can attach to the recorded object key later.
+            Download the parametric draft SVG, or persist medium-res preview metadata with
+            attribution / watermark rules (batik motif differentiator unchanged).
           </p>
-          <pre className="dw-json">{exportJson}</pre>
+          <div className="dw-actions" style={{ marginBottom: '1rem' }}>
+            <Button type="button" onClick={onDownloadSvg} disabled={!draftSvg}>
+              Download pattern SVG
+            </Button>
+            <Button type="button" variant="ghost" onClick={onExportMetadata} disabled={pending}>
+              Export preview metadata
+            </Button>
+          </div>
+          <DraftViewer
+            svg={draftSvg}
+            loading={drafting}
+            notes={draftNotes}
+            setName={pattern.measurementSet.name}
+          />
+          {exportJson ? <pre className="dw-json">{exportJson}</pre> : null}
         </section>
       ) : null}
     </div>
   );
 }
 
+function withResolvedPattern(design: DesignDocument): DesignDocument {
+  return {
+    ...design,
+    pattern: resolvePatternSettings(design.pattern),
+  };
+}
+
 function ComparePanel({ label, design }: { label: string; design: DesignDocument }) {
+  const pattern = resolvePatternSettings(design.pattern);
   return (
     <article className="dw-compare-panel">
       <h3>{label}</h3>
       <p className="dw-muted">{design.meta.label}</p>
+      <p className="dw-muted" style={{ fontSize: '0.85rem' }}>
+        Pattern {pattern.designId} · set “{pattern.measurementSet.name}” · chest{' '}
+        {pattern.measurementSet.measurements.chest}mm
+      </p>
       <ul>
         {design.layers.map((layer) => (
           <li key={layer.id}>

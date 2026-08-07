@@ -36,6 +36,10 @@ Versions were resolved from the npm registry on 2026-08-03 against Node 22.
 
 Exact lockfile versions may float within the ranges declared in `package.json` / `pyproject.toml` after `pnpm install` / `uv`/`pip` freeze; the lockfiles are the source of truth.
 
+### Amendment 2026-08-07 — FreeSewing (Dress Weaver)
+
+`@bcip/web` pins MIT FreeSewing 4.10.0 packages for server-side Aaron drafts: `@freesewing/core`, `@freesewing/aaron`, `@freesewing/brian`, `@freesewing/plugin-bust`, plus peers required under pnpm (`@freesewing/plugin-transform`, `@freesewing/config`, `@freesewing/models`, `@freesewing/i18n`). See ADR-0008.
+
 ## Consequences
 
 - Install and CI are reproducible.

@@ -409,6 +409,61 @@ export const DesignPaletteMappingSchema = z.object({
 });
 export type DesignPaletteMapping = z.infer<typeof DesignPaletteMappingSchema>;
 
+/** FreeSewing-style editor view modes (interaction model, not branding). */
+export const PatternViewModeSchema = z.enum([
+  'draft',
+  'measurements',
+  'motif',
+  'compare',
+  'export',
+]);
+export type PatternViewMode = z.infer<typeof PatternViewModeSchema>;
+
+export const PatternUnitsSchema = z.enum(['metric', 'imperial']);
+export type PatternUnits = z.infer<typeof PatternUnitsSchema>;
+
+/** Parametric sewing designs available in Dress Weaver. */
+export const PatternDesignIdSchema = z.enum(['aaron', 'garment-flat']);
+export type PatternDesignId = z.infer<typeof PatternDesignIdSchema>;
+
+/** Body measurements in millimetres (FreeSewing convention); angles in degrees. */
+export const PatternMeasurementsSchema = z
+  .object({
+    biceps: z.number().positive(),
+    chest: z.number().positive(),
+    hpsToBust: z.number().positive(),
+    hpsToWaistBack: z.number().positive(),
+    neck: z.number().positive(),
+    shoulderToShoulder: z.number().positive(),
+    shoulderSlope: z.number(),
+    waistToArmpit: z.number().positive(),
+    waistToHips: z.number().positive(),
+    hips: z.number().positive(),
+    highBust: z.number().positive(),
+  })
+  .passthrough();
+export type PatternMeasurements = z.infer<typeof PatternMeasurementsSchema>;
+
+export const PatternMeasurementSetSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  measurements: PatternMeasurementsSchema,
+});
+export type PatternMeasurementSet = z.infer<typeof PatternMeasurementSetSchema>;
+
+/**
+ * Optional FreeSewing-inspired pattern block on design JSON.
+ * Absent on legacy versions → domain fills Aaron/Bogus defaults at read/edit time.
+ */
+export const DesignPatternSettingsSchema = z.object({
+  designId: PatternDesignIdSchema.default('aaron'),
+  units: PatternUnitsSchema.default('metric'),
+  view: PatternViewModeSchema.default('draft'),
+  measurementSet: PatternMeasurementSetSchema,
+  /** FreeSewing design options (ease, etc.) — opaque passthrough for MVP. */
+  options: z.record(z.union([z.number(), z.boolean(), z.string()])).default({}),
+});
+export type DesignPatternSettings = z.infer<typeof DesignPatternSettingsSchema>;
+
 export const DesignDocumentSchema = z.object({
   schemaVersion: z.literal(1),
   garmentTemplateCode: z.string().min(1).max(64),
@@ -427,8 +482,17 @@ export const DesignDocumentSchema = z.object({
     isDemoFictional: z.boolean(),
     label: z.string().min(1).max(200),
   }),
+  pattern: DesignPatternSettingsSchema.optional(),
 });
 export type DesignDocument = z.infer<typeof DesignDocumentSchema>;
+
+export const DraftPatternRequestSchema = z.object({
+  designId: PatternDesignIdSchema,
+  units: PatternUnitsSchema.default('metric'),
+  measurementSet: PatternMeasurementSetSchema,
+  options: z.record(z.union([z.number(), z.boolean(), z.string()])).optional(),
+});
+export type DraftPatternRequest = z.infer<typeof DraftPatternRequestSchema>;
 
 export const SaveDesignVersionRequestSchema = z.object({
   projectCode: z.string().trim().min(1).max(64),

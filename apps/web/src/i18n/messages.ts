@@ -160,12 +160,12 @@ export const messages = {
     lasemGuruPermission: 'Permission concern',
     dressWeaverTitle: 'Dress Weaver',
     dressWeaverBlurb:
-      'Reproducible 2D garment and motif placement workspace. Evolves the fashion-designer prototype into versioned design JSON.',
+      'Parametric pattern draft (FreeSewing-style) plus batik motif placement on versioned design JSON.',
     dressWeaverIntro:
-      'Select a garment template, place public demo motifs, adjust scale/rotation/position, and save immutable design versions. No 3D or AR in this phase.',
+      'Pick a pattern design, edit named measurement sets (seed Bogus), draft with pan/zoom, then place public demo motifs on the garment flat. DEMO / FICTIONAL labels apply to cultural content.',
     dressWeaverDemoProject: 'Demo design projects',
     dressWeaverOpenDemoHint:
-      'Open DEMO-DESIGN-001 for a seeded kaftan with two comparable versions.',
+      'Open DEMO-DESIGN-001 for Aaron/Bogus measurements plus a seeded kaftan with comparable motif versions.',
     dressWeaverOpenWorkspace: 'Open workspace',
     dressWeaverTemplates: 'Garment templates',
     dressWeaverNewProject: 'Start a new design',
@@ -376,12 +376,12 @@ export const messages = {
     lasemGuruPermission: 'Masalah izin',
     dressWeaverTitle: 'Dress Weaver',
     dressWeaverBlurb:
-      'Ruang desain garmen 2D yang dapat direproduksi. Melanjutkan prototipe fashion designer menjadi design JSON berversi.',
+      'Draft pola parametrik (gaya FreeSewing) plus penempatan motif batik pada design JSON berversi.',
     dressWeaverIntro:
-      'Pilih templat garmen, tempatkan motif demo publik, atur skala/rotasi/posisi, dan simpan versi desain yang tidak berubah. Tanpa 3D atau AR pada fase ini.',
+      'Pilih desain pola, sunting set pengukuran bernama (seed Bogus), draft dengan pan/zoom, lalu tempatkan motif demo publik pada flat garmen. Label DEMO / FICTIONAL untuk konten budaya.',
     dressWeaverDemoProject: 'Proyek desain demo',
     dressWeaverOpenDemoHint:
-      'Buka DEMO-DESIGN-001 untuk kaftan berseed dengan dua versi yang dapat dibandingkan.',
+      'Buka DEMO-DESIGN-001 untuk pengukuran Aaron/Bogus plus kaftan berseed dengan versi motif yang dapat dibandingkan.',
     dressWeaverOpenWorkspace: 'Buka ruang kerja',
     dressWeaverTemplates: 'Templat garmen',
     dressWeaverNewProject: 'Mulai desain baru',

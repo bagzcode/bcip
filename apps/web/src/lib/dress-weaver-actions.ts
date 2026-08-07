@@ -2,8 +2,10 @@
 
 import { desc, eq } from 'drizzle-orm';
 import {
+  CatalogueListQuerySchema,
   CreateDesignProjectRequestSchema,
   DesignPreviewExportRequestSchema,
+  DraftPatternRequestSchema,
   SaveDesignVersionRequestSchema,
 } from '@bcip/contracts';
 import {
@@ -21,12 +23,14 @@ import {
   buildPreviewExportMetadata,
   canonicalizeDesignDocument,
   checksumDesignDocument,
+  defaultPatternSettings,
   DEMO_FICTIONAL_LABEL,
 } from '@bcip/domain';
 import { getActorContext } from './actor';
 import { appendAuditEvent } from './audit-log';
 import { getDb } from './db';
 import { listMotifs } from './catalogue';
+import { draftPatternSvg } from './pattern-draft';
 
 export type ActionResult<T = undefined> =
   | { ok: true; message: string; data?: T }
@@ -86,6 +90,7 @@ export async function createDesignProjectAction(
         demoLabel: DEMO_FICTIONAL_LABEL,
       },
       meta: { isDemoFictional: true, label: 'v1 empty' },
+      pattern: defaultPatternSettings({ view: 'draft' }),
     });
 
     await db.insert(designVersions).values({
@@ -301,13 +306,14 @@ export async function exportDesignPreviewAction(
 /** Public demo motifs for the placement picker (access-filtered via catalogue). */
 export async function listPlaceableMotifsAction() {
   const actor = await getActorContext();
-  const { items } = await listMotifs(actor, {
+  const query = CatalogueListQuerySchema.parse({
     q: '',
     demoOnly: true,
     accessTier: 'public',
     limit: 24,
     offset: 0,
   });
+  const { items } = await listMotifs(actor, query);
   return items.map((m) => ({
     id: m.id,
     publicCode: m.publicCode,
@@ -315,4 +321,41 @@ export async function listPlaceableMotifsAction() {
     summary: m.summary,
     isDemoFictional: Boolean(m.isDemoFictional),
   }));
+}
+
+/**
+ * Parametric pattern draft (FreeSewing Aaron or garment-flat placeholder).
+ * Authz via actor context + audit; computation stays on the server — no browser→AI calls.
+ */
+export async function draftPatternAction(raw: unknown) {
+  try {
+    const input = DraftPatternRequestSchema.parse(raw);
+    const actor = await getActorContext();
+    const result = await draftPatternSvg({
+      designId: input.designId,
+      units: input.units,
+      measurementSet: input.measurementSet,
+      options: input.options ?? {},
+    });
+
+    await appendAuditEvent({
+      actorUserId: actor.userId,
+      action: 'pattern.draft',
+      entityType: 'pattern_draft',
+      entityId: crypto.randomUUID(),
+      metadata: {
+        designId: input.designId,
+        units: input.units,
+        setName: input.measurementSet.name,
+        engine: result.engine,
+      },
+    });
+
+    return { ok: true as const, message: 'DRAFTED', data: result };
+  } catch (error) {
+    return {
+      ok: false as const,
+      message: error instanceof Error ? error.message : 'DRAFT_FAILED',
+    };
+  }
 }

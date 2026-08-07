@@ -4,6 +4,7 @@ export * from './audit';
 export * from './claims';
 export * from './governance';
 export * from './design';
+export * from './pattern';
 export * from './research';
 export * from './knowledge';
 export * from './color';

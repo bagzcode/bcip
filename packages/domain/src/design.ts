@@ -6,6 +6,7 @@ import {
   type DesignPaletteMapping,
 } from '@bcip/contracts';
 import { DEMO_FICTIONAL_LABEL } from './access';
+import { canonicalizePatternSettings } from './pattern';
 
 const TRANSFORM_PRECISION = 4;
 
@@ -61,6 +62,7 @@ function sortPaletteMappings(mappings: DesignPaletteMapping[]): DesignPaletteMap
  */
 export function canonicalizeDesignDocument(input: unknown): DesignDocument {
   const parsed = DesignDocumentSchema.parse(input);
+  const pattern = canonicalizePatternSettings(parsed.pattern);
   return {
     schemaVersion: 1,
     garmentTemplateCode: parsed.garmentTemplateCode,
@@ -79,6 +81,7 @@ export function canonicalizeDesignDocument(input: unknown): DesignDocument {
       isDemoFictional: parsed.meta.isDemoFictional,
       label: parsed.meta.label,
     },
+    ...(pattern ? { pattern } : {}),
   };
 }
 
@@ -188,5 +191,6 @@ export function emptyDesignDocument(input: {
       isDemoFictional: true,
       label: input.label ?? 'Untitled design',
     },
+    pattern: undefined,
   });
 }
