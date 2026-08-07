@@ -63,7 +63,13 @@ export default async function ResearchCollectPage({ params, searchParams }: Prop
           <p className="research-meta">
             {ctx.condition?.code} · {ctx.stimulus?.samplePublicCode} · {ctx.assignment.status}
           </p>
-          <form action={submitResearchResponsesAction} className="research-form">
+          <form
+            action={async (formData) => {
+              'use server';
+              await submitResearchResponsesAction(formData);
+            }}
+            className="research-form"
+          >
             <input type="hidden" name="studyCode" value={studyCode} />
             <input type="hidden" name="pseudonym" value={ctx.participant.pseudonym} />
             {ctx.items.map((item) => (

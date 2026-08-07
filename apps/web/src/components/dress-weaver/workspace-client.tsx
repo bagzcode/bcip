@@ -16,7 +16,7 @@ type PlaceableMotif = {
   publicCode: string;
   title: string;
   summary: string;
-  isDemoFictional?: boolean;
+  isDemoFictional: boolean;
 };
 
 export function DressWeaverWorkspaceClient({

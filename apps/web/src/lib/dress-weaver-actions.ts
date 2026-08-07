@@ -313,6 +313,6 @@ export async function listPlaceableMotifsAction() {
     publicCode: m.publicCode,
     title: m.title,
     summary: m.summary,
-    isDemoFictional: m.isDemoFictional,
+    isDemoFictional: Boolean(m.isDemoFictional),
   }));
 }

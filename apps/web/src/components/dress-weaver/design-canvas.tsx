@@ -11,7 +11,7 @@ type PlaceableMotif = {
   publicCode: string;
   title: string;
   summary: string;
-  isDemoFictional?: boolean;
+  isDemoFictional: boolean;
 };
 
 type DesignCanvasProps = {
@@ -113,11 +113,11 @@ export function DesignCanvas({
     setSelectedId(null);
   }
 
-  const clipForRegion = (key: string) => {
+  const clipForRegion = (key: string): ((ctx: { beginPath(): void; moveTo(x: number, y: number): void; lineTo(x: number, y: number): void; closePath(): void }) => void) | undefined => {
     const region = template.regions.find((r) => r.regionKey === key);
     if (!region?.clipPolygon.length) return undefined;
-    return (ctx: CanvasRenderingContext2D) => {
-      const pts = region.clipPolygon;
+    const pts = region.clipPolygon;
+    return (ctx) => {
       ctx.beginPath();
       ctx.moveTo(pts[0]!.x, pts[0]!.y);
       for (let i = 1; i < pts.length; i++) {
@@ -299,7 +299,7 @@ export function DesignCanvas({
             .map((layer) => {
               const style = motifFill(layer.motifPublicCode);
               const t = layer.transform;
-              const tiles =
+              const tiles: Array<[number, number]> =
                 layer.repeat?.enabled
                   ? [
                       [0, 0],
@@ -308,6 +308,7 @@ export function DesignCanvas({
                       [layer.repeat.gapX, layer.repeat.gapY],
                     ]
                   : [[0, 0]];
+              const clipFunc = clipForRegion(layer.regionKey);
               return (
                 <Group
                   key={layer.id}
@@ -318,7 +319,7 @@ export function DesignCanvas({
                   rotation={t.rotation}
                   opacity={t.opacity}
                   draggable
-                  clipFunc={clipForRegion(layer.regionKey)}
+                  {...(clipFunc ? { clipFunc } : {})}
                   onClick={() => setSelectedId(layer.id)}
                   onTap={() => setSelectedId(layer.id)}
                   onDragEnd={(e) => {

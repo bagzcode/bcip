@@ -22,6 +22,14 @@ import {
   claimSources,
   captureSessions,
   assets,
+  assetVersions,
+  colorAnalysisJobs,
+  colorAnalyses,
+  analysisMasks,
+  palettes,
+  paletteColors,
+  colorFeatures,
+  colorComparisons,
   garmentTemplates,
   garmentRegions,
   designProjects,
@@ -1382,14 +1390,412 @@ async function main() {
     }
   }
 
+  // --- Phase 2 Hue Seer: fictional color analyses (no GPU, not research data) ---
+  const sampleA1 = (
+    await db.select().from(samples).where(eq(samples.publicCode, 'DEMO-SAMPLE-A1')).limit(1)
+  )[0];
+  const sampleB1 = (
+    await db.select().from(samples).where(eq(samples.publicCode, 'DEMO-SAMPLE-B1')).limit(1)
+  )[0];
+
+  async function upsertHueSeerDemoAsset(objectKey: string, sampleId: string | undefined) {
+    const existingAv = await db
+      .select()
+      .from(assetVersions)
+      .where(eq(assetVersions.objectKey, objectKey))
+      .limit(1);
+    if (existingAv[0]) return existingAv[0].id;
+    const [asset] = await db
+      .insert(assets)
+      .values({
+        sampleId: sampleId ?? null,
+        assetType: 'raw_photo',
+        status: 'verified',
+        accessPolicyId: publicPolicyId,
+      })
+      .returning();
+    const [av] = await db
+      .insert(assetVersions)
+      .values({
+        assetId: asset!.id,
+        versionNumber: 1,
+        objectKey,
+        checksumSha256: '0'.repeat(64),
+        mimeType: 'image/png',
+        byteSize: 1024,
+        status: 'active',
+      })
+      .returning();
+    return av!.id;
+  }
+
+  const hueAssetA = await upsertHueSeerDemoAsset(
+    'demo/fictional/hue-seer-a.png',
+    sampleA1?.id,
+  );
+  const hueAssetB = await upsertHueSeerDemoAsset(
+    'demo/fictional/hue-seer-b.png',
+    sampleB1?.id,
+  );
+
+  type SeedSwatch = {
+    rank: number;
+    proportion: string;
+    hex: string;
+    rgb: [number, number, number];
+    lab: [string, string, string];
+    lch: [string, string, string];
+    hsv: [string, string, string];
+  };
+
+  async function upsertDemoAnalysis(input: {
+    publicCode: string;
+    title: string;
+    mode: 'calibrated' | 'exploratory';
+    isCalibrated: boolean;
+    assetVersionId: string;
+    sampleId?: string;
+    seedKey: string;
+    calibration?: Record<string, unknown> | null;
+    warnings: string[];
+    features: {
+      meanLightness: string;
+      meanChroma: string;
+      colorEntropy: string;
+      warmCoolRatio: string;
+      hueDistribution: Record<string, number>;
+    };
+    swatches: SeedSwatch[];
+  }) {
+    const existing = await db
+      .select()
+      .from(colorAnalyses)
+      .where(eq(colorAnalyses.publicCode, input.publicCode))
+      .limit(1);
+    if (existing[0]) return existing[0].id;
+
+    const [job] = await db
+      .insert(colorAnalysisJobs)
+      .values({
+        assetVersionId: input.assetVersionId,
+        sampleId: input.sampleId,
+        analysisMode: input.mode,
+        status: 'completed',
+        parameters: {
+          palette_size: input.swatches.length,
+          segmentation_method: 'baseline-v1',
+          clustering_method: 'quantize-rgb-v1',
+          synthetic_seed: input.seedKey,
+        },
+        algorithmName: 'bcip-color-pipeline',
+        algorithmVersion: '0.2.0',
+        inputObjectKey: input.seedKey.startsWith('demo/')
+          ? input.seedKey
+          : `demo/fictional/${input.seedKey}.png`,
+        isDemoFictional: true,
+      })
+      .returning();
+
+    const [analysis] = await db
+      .insert(colorAnalyses)
+      .values({
+        publicCode: input.publicCode,
+        colorAnalysisJobId: job!.id,
+        assetVersionId: input.assetVersionId,
+        sampleId: input.sampleId,
+        title: input.title,
+        analysisMode: input.mode,
+        isCalibrated: input.isCalibrated,
+        algorithmName: 'bcip-color-pipeline',
+        algorithmVersion: '0.2.0',
+        parameters: {
+          palette_size: input.swatches.length,
+          segmentation_method: 'baseline-v1',
+          clustering_method: 'quantize-rgb-v1',
+          synthetic_seed: input.seedKey,
+        },
+        dependencyVersions: {
+          python_color_pipeline: '0.2.0',
+          color_science: '0.2.0',
+          illuminant_assumption: 'D65',
+          rgb_space_assumption: 'sRGB',
+        },
+        calibration: input.calibration ?? null,
+        qualityWarnings: input.warnings,
+        resultChecksum: `seed-${input.publicCode.toLowerCase()}`,
+        reviewStatus: 'approved',
+        accessPolicyId: publicPolicyId,
+        isDemoFictional: true,
+        labelNote: `${DEMO}. ${
+          input.isCalibrated
+            ? 'CALIBRATED demo numbers for UI tests — not heritage knowledge.'
+            : 'EXPLORATORY demo numbers for UI tests — not calibrated scientific measurements.'
+        }`,
+      })
+      .returning();
+
+    const [palette] = await db
+      .insert(palettes)
+      .values({
+        colorAnalysisId: analysis!.id,
+        versionLabel: 'v1',
+        colorCount: input.swatches.length,
+        isDemoFictional: true,
+      })
+      .returning();
+
+    await db.insert(paletteColors).values(
+      input.swatches.map((s) => ({
+        paletteId: palette!.id,
+        rank: s.rank,
+        proportion: s.proportion,
+        displayHex: s.hex,
+        rgbR: s.rgb[0],
+        rgbG: s.rgb[1],
+        rgbB: s.rgb[2],
+        labL: s.lab[0],
+        labA: s.lab[1],
+        labB: s.lab[2],
+        lchL: s.lch[0],
+        lchC: s.lch[1],
+        lchH: s.lch[2],
+        hsvH: s.hsv[0],
+        hsvS: s.hsv[1],
+        hsvV: s.hsv[2],
+      })),
+    );
+
+    await db.insert(colorFeatures).values({
+      colorAnalysisId: analysis!.id,
+      meanLightness: input.features.meanLightness,
+      meanChroma: input.features.meanChroma,
+      colorEntropy: input.features.colorEntropy,
+      warmCoolRatio: input.features.warmCoolRatio,
+      hueDistribution: input.features.hueDistribution,
+    });
+
+    await db.insert(analysisMasks).values({
+      colorAnalysisId: analysis!.id,
+      method: 'baseline-v1',
+      confidence: '0.55',
+      isManualOverride: false,
+      objectKey: `demo/fictional/masks/${input.publicCode}.json`,
+      checksumSha256: '1'.repeat(64),
+    });
+
+    return analysis!.id;
+  }
+
+  const analysisExplA = await upsertDemoAnalysis({
+    publicCode: 'DEMO-ANALYSIS-EXPL-A',
+    title: `${DEMO}: Exploratory lattice sample A`,
+    mode: 'exploratory',
+    isCalibrated: false,
+    assetVersionId: hueAssetA,
+    sampleId: sampleA1?.id,
+    seedKey: 'demo/fictional/hue-seer-a.png',
+    warnings: [
+      'EXPLORATORY: ordinary photograph / uncalibrated capture — not a calibrated scientific measurement.',
+      'PIPELINE: deterministic_stub seed data — not research measurements.',
+    ],
+    features: {
+      meanLightness: '48.2500',
+      meanChroma: '32.1000',
+      colorEntropy: '0.6400',
+      warmCoolRatio: '0.7200',
+      hueDistribution: { warm: 0.72, cool: 0.28, bin_0: 0.3, bin_1: 0.25 },
+    },
+    swatches: [
+      {
+        rank: 1,
+        proportion: '0.3800',
+        hex: '#8D4B3B',
+        rgb: [141, 75, 59],
+        lab: ['42.1000', '35.0000', '22.4000'],
+        lch: ['42.1000', '41.6000', '32.6000'],
+        hsv: ['12.0000', '0.5800', '0.5500'],
+      },
+      {
+        rank: 2,
+        proportion: '0.2700',
+        hex: '#C4A574',
+        rgb: [196, 165, 116],
+        lab: ['69.2000', '8.1000', '30.4000'],
+        lch: ['69.2000', '31.5000', '75.1000'],
+        hsv: ['37.0000', '0.4100', '0.7700'],
+      },
+      {
+        rank: 3,
+        proportion: '0.2000',
+        hex: '#2F5D50',
+        rgb: [47, 93, 80],
+        lab: ['36.0000', '-18.0000', '5.0000'],
+        lch: ['36.0000', '18.7000', '164.0000'],
+        hsv: ['160.0000', '0.5000', '0.3600'],
+      },
+      {
+        rank: 4,
+        proportion: '0.1500',
+        hex: '#1A1A1A',
+        rgb: [26, 26, 26],
+        lab: ['8.0000', '0.0000', '0.0000'],
+        lch: ['8.0000', '0.0000', '0.0000'],
+        hsv: ['0.0000', '0.0000', '0.1000'],
+      },
+    ],
+  });
+
+  const analysisExplB = await upsertDemoAnalysis({
+    publicCode: 'DEMO-ANALYSIS-EXPL-B',
+    title: `${DEMO}: Exploratory wave sample B`,
+    mode: 'exploratory',
+    isCalibrated: false,
+    assetVersionId: hueAssetB,
+    sampleId: sampleB1?.id,
+    seedKey: 'demo/fictional/hue-seer-b.png',
+    warnings: [
+      'EXPLORATORY: ordinary photograph / uncalibrated capture — not a calibrated scientific measurement.',
+      'PIPELINE: deterministic_stub seed data — not research measurements.',
+    ],
+    features: {
+      meanLightness: '52.8000',
+      meanChroma: '28.4000',
+      colorEntropy: '0.5800',
+      warmCoolRatio: '0.4100',
+      hueDistribution: { warm: 0.41, cool: 0.59, bin_4: 0.35, bin_5: 0.22 },
+    },
+    swatches: [
+      {
+        rank: 1,
+        proportion: '0.4200',
+        hex: '#3A6B8C',
+        rgb: [58, 107, 140],
+        lab: ['43.5000', '-8.2000', '-24.1000'],
+        lch: ['43.5000', '25.5000', '251.2000'],
+        hsv: ['204.0000', '0.5900', '0.5500'],
+      },
+      {
+        rank: 2,
+        proportion: '0.2500',
+        hex: '#E8D5B5',
+        rgb: [232, 213, 181],
+        lab: ['85.1000', '2.4000', '18.2000'],
+        lch: ['85.1000', '18.4000', '82.5000'],
+        hsv: ['38.0000', '0.2200', '0.9100'],
+      },
+      {
+        rank: 3,
+        proportion: '0.2000',
+        hex: '#6B3A4A',
+        rgb: [107, 58, 74],
+        lab: ['32.4000', '24.1000', '4.2000'],
+        lch: ['32.4000', '24.5000', '9.9000'],
+        hsv: ['340.0000', '0.4600', '0.4200'],
+      },
+      {
+        rank: 4,
+        proportion: '0.1300',
+        hex: '#F5F0E8',
+        rgb: [245, 240, 232],
+        lab: ['94.5000', '0.8000', '4.5000'],
+        lch: ['94.5000', '4.6000', '80.0000'],
+        hsv: ['37.0000', '0.0500', '0.9600'],
+      },
+    ],
+  });
+
+  const analysisCalA = await upsertDemoAnalysis({
+    publicCode: 'DEMO-ANALYSIS-CAL-A',
+    title: `${DEMO}: Calibrated chart capture A`,
+    mode: 'calibrated',
+    isCalibrated: true,
+    assetVersionId: hueAssetA,
+    sampleId: sampleA1?.id,
+    seedKey: 'demo/fictional/hue-seer-a-cal.png',
+    calibration: { target_id: 'CC-01', illuminant: 'D65', observer: '2_degree' },
+    warnings: [
+      'CALIBRATED: analysis used an explicit calibration target/profile. Still not a cultural claim.',
+      'PIPELINE: deterministic_stub seed data — not research measurements.',
+    ],
+    features: {
+      meanLightness: '49.1000',
+      meanChroma: '31.2000',
+      colorEntropy: '0.6100',
+      warmCoolRatio: '0.6900',
+      hueDistribution: { warm: 0.69, cool: 0.31, bin_0: 0.28, bin_1: 0.24 },
+    },
+    swatches: [
+      {
+        rank: 1,
+        proportion: '0.3600',
+        hex: '#8A4938',
+        rgb: [138, 73, 56],
+        lab: ['41.8000', '34.2000', '21.9000'],
+        lch: ['41.8000', '40.6000', '32.6000'],
+        hsv: ['12.0000', '0.5900', '0.5400'],
+      },
+      {
+        rank: 2,
+        proportion: '0.2800',
+        hex: '#C2A270',
+        rgb: [194, 162, 112],
+        lab: ['68.4000', '7.8000', '29.8000'],
+        lch: ['68.4000', '30.8000', '75.3000'],
+        hsv: ['37.0000', '0.4200', '0.7600'],
+      },
+      {
+        rank: 3,
+        proportion: '0.2200',
+        hex: '#2C5A4D',
+        rgb: [44, 90, 77],
+        lab: ['35.2000', '-17.4000', '4.8000'],
+        lch: ['35.2000', '18.1000', '164.5000'],
+        hsv: ['163.0000', '0.5100', '0.3500'],
+      },
+      {
+        rank: 4,
+        proportion: '0.1400',
+        hex: '#181818',
+        rgb: [24, 24, 24],
+        lab: ['7.2000', '0.0000', '0.0000'],
+        lch: ['7.2000', '0.0000', '0.0000'],
+        hsv: ['0.0000', '0.0000', '0.0900'],
+      },
+    ],
+  });
+
+  const existingCmp = await db
+    .select()
+    .from(colorComparisons)
+    .where(eq(colorComparisons.analysisAId, analysisExplA))
+    .limit(1);
+  if (!existingCmp[0] && analysisExplA && analysisExplB) {
+    await db.insert(colorComparisons).values({
+      analysisAId: analysisExplA,
+      analysisBId: analysisExplB,
+      ciede2000Mean: '18.5000',
+      ciede2000Max: '42.0000',
+      algorithmVersion: '0.2.0',
+      summary: {
+        pairs: 4,
+        note: `${DEMO}: seeded CIEDE2000 placeholder for compare UI.`,
+      },
+      isDemoFictional: true,
+    });
+  }
+
+  void analysisCalA;
   void visitorId;
   console.log(
     [
-      'Seed complete (Phase 1 + Phase 3 Lasem Guru + Phase 4 Dress Weaver + Phase 5 Research Lab).',
+      'Seed complete (Phase 1 + Phase 2 Hue Seer + Phase 3 Lasem Guru + Phase 4 Dress Weaver + Phase 5 Research Lab).',
       `Demo password for *@demo.bcip.local: ${DEMO_PASSWORD}`,
       'Users: visitor, designer, researcher, steward, admin @demo.bcip.local',
       'Motifs: DEMO-MOTIF-A/B (public), DEMO-MOTIF-R (research), DEMO-MOTIF-X (restricted)',
       'Withdrawn sample: DEMO-SAMPLE-W1',
+      'Hue Seer analyses: DEMO-ANALYSIS-EXPL-A, DEMO-ANALYSIS-EXPL-B, DEMO-ANALYSIS-CAL-A',
+      'Hue Seer assets: demo/fictional/hue-seer-a.png, demo/fictional/hue-seer-b.png',
+      'Hue Seer UI: /hue-seer , /hue-seer/DEMO-ANALYSIS-EXPL-A , /hue-seer/compare',
       'Lasem Guru sources: DEMO-SRC-LG-001, DEMO-SRC-LG-002, DEMO-SRC-LG-R, DEMO-SRC-LG-X, DEMO-SRC-LG-INJ',
       'Fragment keys: lg-lattice-process, lg-lattice-color, lg-wave-production, lg-research-note, lg-restricted-secret, lg-injection',
       'Garments: DEMO-GARMENT-KAFTAN, DEMO-GARMENT-TUNIC',
