@@ -1,5 +1,6 @@
 export * from './access';
 export * from './catalogue';
+export * from './storyboard';
 export * from './audit';
 export * from './claims';
 export * from './governance';
@@ -8,3 +9,4 @@ export * from './pattern';
 export * from './research';
 export * from './knowledge';
 export * from './color';
+export * from './dye-predict';

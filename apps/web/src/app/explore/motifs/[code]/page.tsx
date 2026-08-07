@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Badge, ProvenanceStrip } from '@bcip/ui';
 import { hasPermission } from '@bcip/domain';
 import { ClaimsList } from '@/app/explore/components/claims-list';
+import { MotifDetailClient } from '@/app/explore/components/motif-detail-client';
 import { SaveButton } from '@/app/explore/components/save-button';
 import { getLocale } from '@/i18n/get-locale';
 import { t } from '@/i18n/messages';
@@ -28,20 +29,11 @@ export default async function MotifDetailPage({ params }: { params: Params }) {
 
   return (
     <section>
-      <p>
-        <Link href="/explore">← {t(locale, 'exploreBack')}</Link>
-      </p>
       <Badge>{t(locale, 'demoBadge')}</Badge>
       <p style={{ marginTop: '0.75rem', color: 'var(--bcip-muted)', fontSize: '0.85rem' }}>
         {t(locale, 'motifDetailTitle')} · {motif.publicCode}
       </p>
-      <h1 style={{ marginTop: '0.35rem' }}>{motif.title}</h1>
-      <p style={{ maxWidth: '40rem' }}>{motif.summary}</p>
-      <p style={{ fontSize: '0.9rem', color: 'var(--bcip-muted)' }}>
-        <Link href={`/explore/collections/${motif.collectionCode}`}>{motif.collectionCode}</Link>
-        {' · '}
-        {motif.language}
-      </p>
+
       <ProvenanceStrip
         reviewStatus={motif.reviewStatus}
         accessTier={motif.accessTier}
@@ -50,6 +42,59 @@ export default async function MotifDetailPage({ params }: { params: Params }) {
         reviewLabel={t(locale, 'provenanceReview')}
         accessLabel={t(locale, 'provenanceAccess')}
         sourcesLabel={t(locale, 'provenanceSources')}
+      />
+
+      <MotifDetailClient
+        code={motif.publicCode}
+        title={motif.title}
+        region={motif.region}
+        era={motif.era}
+        fabricType={motif.fabricType}
+        colorPalette={motif.colorPalette}
+        symbolism={motif.symbolism}
+        story={motif.story}
+        summary={motif.summary}
+        visualSeed={motif.visualSeed}
+        originLat={motif.originLat}
+        originLng={motif.originLng}
+        artisan={
+          motif.artisan
+            ? {
+                code: motif.artisan.publicCode,
+                name: motif.artisan.displayName,
+                bio: motif.artisan.bio,
+                visualSeed: motif.artisan.visualSeed,
+                region: motif.artisan.region,
+              }
+            : null
+        }
+        linen={
+          motif.linen
+            ? {
+                code: motif.linen.publicCode,
+                title: motif.linen.title,
+                visualSeed: motif.linen.visualSeed,
+              }
+            : null
+        }
+        labels={{
+          back: t(locale, 'exploreNavMotifs'),
+          sketch: t(locale, 'exploreTabSketch'),
+          fabric: t(locale, 'exploreTabFabric'),
+          originLinen: t(locale, 'exploreTabLinen'),
+          zoom: t(locale, 'exploreZoom'),
+          meaning: t(locale, 'exploreMeaningHistory'),
+          details: t(locale, 'exploreDetails'),
+          region: t(locale, 'exploreFilterRegion'),
+          era: t(locale, 'exploreFilterEra'),
+          fabricType: t(locale, 'exploreFabricType'),
+          palette: t(locale, 'exploreColorPalette'),
+          symbolism: t(locale, 'exploreFilterSymbolism'),
+          artisan: t(locale, 'exploreArtisan'),
+          tryAr: t(locale, 'exploreTryAr'),
+          toggleAr: t(locale, 'exploreToggleAr'),
+          map: t(locale, 'exploreOriginMap'),
+        }}
       />
 
       <div style={{ marginTop: '1rem' }}>

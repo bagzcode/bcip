@@ -14,6 +14,20 @@ describe('Phase 1 catalogue contracts', () => {
     expect(q.limit).toBe(24);
     expect(q.offset).toBe(0);
     expect(q.demoOnly).toBe(false);
+    expect(q.regions).toEqual([]);
+    expect(q.eras).toEqual([]);
+    expect(q.symbolism).toEqual([]);
+  });
+
+  it('parses storyboard multi-select filters from csv', () => {
+    const q = CatalogueListQuerySchema.parse({
+      regions: 'Lasem,Solo',
+      eras: 'Colonial',
+      symbolism: 'Flora,Philosophy',
+    });
+    expect(q.regions).toEqual(['Lasem', 'Solo']);
+    expect(q.eras).toEqual(['Colonial']);
+    expect(q.symbolism).toEqual(['Flora', 'Philosophy']);
   });
 
   it('parses compare codes from csv string', () => {

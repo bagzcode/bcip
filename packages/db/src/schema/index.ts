@@ -4,6 +4,7 @@ import {
   timestamp,
   boolean,
   integer,
+  doublePrecision,
   jsonb,
   index,
   uniqueIndex,
@@ -563,6 +564,58 @@ export const personalCollections = pgTable(
   (t) => [index('personal_collections_user_idx').on(t.userId)],
 );
 
+/** Motif Explorer — demo artisan profiles (Storyboard Artisans Directory). */
+export const artisans = pgTable(
+  'artisans',
+  {
+    id: uuidPk(),
+    publicCode: text('public_code').notNull(),
+    displayName: text('display_name').notNull(),
+    /** Short bio; must carry DEMO label when is_demo_fictional. */
+    bio: text('bio').notNull(),
+    region: text('region'),
+    originLat: doublePrecision('origin_lat'),
+    originLng: doublePrecision('origin_lng'),
+    /** Deterministic placeholder visual key (no binary assets required). */
+    visualSeed: text('visual_seed').notNull().default('demo-artisan'),
+    accessPolicyId: text('access_policy_id').references(() => accessPolicies.id),
+    reviewStatus: reviewStatusEnum('review_status').notNull().default('draft'),
+    isDemoFictional: boolean('is_demo_fictional').notNull().default(false),
+    status: text('status').notNull().default('active'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex('artisans_public_code_uidx').on(t.publicCode),
+    index('artisans_region_idx').on(t.region),
+  ],
+);
+
+/** Motif Explorer — demo linen / cloth library entries. */
+export const linenItems = pgTable(
+  'linen_items',
+  {
+    id: uuidPk(),
+    publicCode: text('public_code').notNull(),
+    title: text('title').notNull(),
+    description: text('description').notNull(),
+    fiberType: text('fiber_type'),
+    weaveNotes: text('weave_notes'),
+    region: text('region'),
+    visualSeed: text('visual_seed').notNull().default('demo-linen'),
+    accessPolicyId: text('access_policy_id').references(() => accessPolicies.id),
+    reviewStatus: reviewStatusEnum('review_status').notNull().default('draft'),
+    isDemoFictional: boolean('is_demo_fictional').notNull().default(false),
+    status: text('status').notNull().default('active'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex('linen_items_public_code_uidx').on(t.publicCode),
+    index('linen_items_region_idx').on(t.region),
+  ],
+);
+
 export const personalCollectionItems = pgTable(
   'personal_collection_items',
   {
@@ -616,12 +669,34 @@ export const motifs = pgTable(
     reviewStatus: reviewStatusEnum('review_status').notNull().default('draft'),
     isDemoFictional: boolean('is_demo_fictional').notNull().default(false),
     status: text('status').notNull().default('active'),
+    /** Storyboard browse metadata (demo-scoped; not research geography). */
+    region: text('region'),
+    era: text('era'),
+    /** string[] symbolism tags for gallery filters. */
+    symbolism: jsonb('symbolism').$type<string[]>().notNull().default([]),
+    fabricType: text('fabric_type'),
+    /** Display hex palette swatches (demo). */
+    colorPalette: jsonb('color_palette').$type<string[]>().notNull().default([]),
+    /** Longer meaning/history narrative; DEMO-labelled when fictional. */
+    story: text('story'),
+    artisanId: text('artisan_id').references(() => artisans.id, { onDelete: 'set null' }),
+    linenItemId: text('linen_item_id').references(() => linenItems.id, {
+      onDelete: 'set null',
+    }),
+    originLat: doublePrecision('origin_lat'),
+    originLng: doublePrecision('origin_lng'),
+    isFeatured: boolean('is_featured').notNull().default(false),
+    /** Deterministic CSS/canvas placeholder seed. */
+    visualSeed: text('visual_seed').notNull().default('demo-motif'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [
     uniqueIndex('motifs_public_code_uidx').on(t.publicCode),
     index('motifs_collection_idx').on(t.collectionId),
+    index('motifs_region_idx').on(t.region),
+    index('motifs_artisan_idx').on(t.artisanId),
+    index('motifs_featured_idx').on(t.isFeatured),
   ],
 );
 

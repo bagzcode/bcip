@@ -1,6 +1,7 @@
 import { createDb } from './index';
 import {
   accessPolicies,
+  artisans,
   collections,
   motifs,
   samples,
@@ -48,6 +49,7 @@ import {
   participants,
   studyAssignments,
   responses,
+  linenItems,
 } from './schema/index';
 import { eq } from 'drizzle-orm';
 import { hashPassword } from 'better-auth/crypto';
@@ -1790,14 +1792,324 @@ async function main() {
     });
   }
 
+  // --- Motif Explorer Storyboard demo entities (fictional; not research data) ---
+  async function upsertArtisan(input: {
+    code: string;
+    name: string;
+    bio: string;
+    region: string;
+    lat: number;
+    lng: number;
+    visualSeed: string;
+  }) {
+    const existing = await db
+      .select()
+      .from(artisans)
+      .where(eq(artisans.publicCode, input.code))
+      .limit(1);
+    if (existing[0]) {
+      await db
+        .update(artisans)
+        .set({
+          displayName: input.name,
+          bio: input.bio,
+          region: input.region,
+          originLat: input.lat,
+          originLng: input.lng,
+          visualSeed: input.visualSeed,
+          accessPolicyId: publicPolicyId,
+          reviewStatus: 'approved',
+          isDemoFictional: true,
+          status: 'active',
+        })
+        .where(eq(artisans.id, existing[0].id));
+      return existing[0].id;
+    }
+    const [row] = await db
+      .insert(artisans)
+      .values({
+        publicCode: input.code,
+        displayName: input.name,
+        bio: input.bio,
+        region: input.region,
+        originLat: input.lat,
+        originLng: input.lng,
+        visualSeed: input.visualSeed,
+        accessPolicyId: publicPolicyId,
+        reviewStatus: 'approved',
+        isDemoFictional: true,
+        status: 'active',
+      })
+      .returning();
+    return row!.id;
+  }
+
+  async function upsertLinen(input: {
+    code: string;
+    title: string;
+    description: string;
+    fiberType: string;
+    weaveNotes: string;
+    region: string;
+    visualSeed: string;
+  }) {
+    const existing = await db
+      .select()
+      .from(linenItems)
+      .where(eq(linenItems.publicCode, input.code))
+      .limit(1);
+    if (existing[0]) {
+      await db
+        .update(linenItems)
+        .set({
+          title: input.title,
+          description: input.description,
+          fiberType: input.fiberType,
+          weaveNotes: input.weaveNotes,
+          region: input.region,
+          visualSeed: input.visualSeed,
+          accessPolicyId: publicPolicyId,
+          reviewStatus: 'approved',
+          isDemoFictional: true,
+          status: 'active',
+        })
+        .where(eq(linenItems.id, existing[0].id));
+      return existing[0].id;
+    }
+    const [row] = await db
+      .insert(linenItems)
+      .values({
+        publicCode: input.code,
+        title: input.title,
+        description: input.description,
+        fiberType: input.fiberType,
+        weaveNotes: input.weaveNotes,
+        region: input.region,
+        visualSeed: input.visualSeed,
+        accessPolicyId: publicPolicyId,
+        reviewStatus: 'approved',
+        isDemoFictional: true,
+        status: 'active',
+      })
+      .returning();
+    return row!.id;
+  }
+
+  const artisanRenji = await upsertArtisan({
+    code: 'DEMO-ART-RENJI',
+    name: 'Renji Santoso (demo)',
+    bio: `${DEMO}. Fictional Lasem artisan profile for Motif Explorer Storyboard UI tests. Not a real person or research participant.`,
+    region: 'Lasem',
+    lat: -6.539,
+    lng: 111.455,
+    visualSeed: 'renji-lasem',
+  });
+  const artisanSari = await upsertArtisan({
+    code: 'DEMO-ART-SARI',
+    name: 'Sari Wulandari (demo)',
+    bio: `${DEMO}. Fictional coastal artisan profile invented for directory and map demos.`,
+    region: 'Lasem',
+    lat: -6.545,
+    lng: 111.462,
+    visualSeed: 'sari-lasem',
+  });
+  const artisanBudi = await upsertArtisan({
+    code: 'DEMO-ART-BUDI',
+    name: 'Budi Hartono (demo)',
+    bio: `${DEMO}. Fictional inland artisan profile for multi-region map pins. Not affiliated with any real workshop.`,
+    region: 'Yogyakarta',
+    lat: -7.795,
+    lng: 110.369,
+    visualSeed: 'budi-yogya',
+  });
+
+  const linenPrimissima = await upsertLinen({
+    code: 'DEMO-LINEN-PRIM',
+    title: 'Primissima cotton (demo)',
+    description: `${DEMO}. Synthetic cloth library entry describing a fictional fine cotton base used only for UI texture panels.`,
+    fiberType: 'Cotton',
+    weaveNotes: 'Plain weave · fictional mill notes',
+    region: 'Lasem',
+    visualSeed: 'linen-prim',
+  });
+  const linenMori = await upsertLinen({
+    code: 'DEMO-LINEN-MORI',
+    title: 'Mori cloth (demo)',
+    description: `${DEMO}. Synthetic linen-library row for gallery Origin Linen tabs.`,
+    fiberType: 'Cotton',
+    weaveNotes: 'Medium hand · fictional',
+    region: 'Cirebon',
+    visualSeed: 'linen-mori',
+  });
+  const linenPricis = await upsertLinen({
+    code: 'DEMO-LINEN-PRICIS',
+    title: 'Pricis blend (demo)',
+    description: `${DEMO}. Fictional blended cloth entry for Linen Library browse.`,
+    fiberType: 'Cotton blend',
+    weaveNotes: 'Soft hand · fictional',
+    region: 'Solo',
+    visualSeed: 'linen-pricis',
+  });
+
+  async function upsertStoryboardMotif(input: {
+    code: string;
+    title: string;
+    summary: string;
+    story: string;
+    region: string;
+    era: string;
+    symbolism: string[];
+    fabricType: string;
+    colorPalette: string[];
+    artisanId: string;
+    linenItemId: string;
+    lat: number;
+    lng: number;
+    isFeatured?: boolean;
+    visualSeed: string;
+  }) {
+    const existing = await db.select().from(motifs).where(eq(motifs.publicCode, input.code)).limit(1);
+    const values = {
+      collectionId,
+      publicCode: input.code,
+      title: input.title,
+      summary: input.summary,
+      story: input.story,
+      language: 'en' as const,
+      accessPolicyId: publicPolicyId,
+      reviewStatus: 'approved' as const,
+      isDemoFictional: true,
+      status: 'active',
+      region: input.region,
+      era: input.era,
+      symbolism: input.symbolism,
+      fabricType: input.fabricType,
+      colorPalette: input.colorPalette,
+      artisanId: input.artisanId,
+      linenItemId: input.linenItemId,
+      originLat: input.lat,
+      originLng: input.lng,
+      isFeatured: Boolean(input.isFeatured),
+      visualSeed: input.visualSeed,
+    };
+    if (existing[0]) {
+      await db.update(motifs).set(values).where(eq(motifs.id, existing[0].id));
+      return existing[0].id;
+    }
+    const [m] = await db.insert(motifs).values(values).returning();
+    return m!.id;
+  }
+
+  await upsertStoryboardMotif({
+    code: 'DEMO-SB-SJ',
+    title: 'Sekar Jagad (demo)',
+    summary: `${DEMO}. Placeholder “flower of the universe” gallery card for Storyboard UI — fictional meaning only; not a Lasem research claim.`,
+    story: `${DEMO}. Meaning & history text invented for Motif Explorer detail screens. Do not cite as heritage documentation. Pilot scope note: Batik Lasem meanings are not universal across batik traditions.`,
+    region: 'Lasem',
+    era: 'Colonial',
+    symbolism: ['Flora', 'Philosophy'],
+    fabricType: 'Primissima cotton (demo)',
+    colorPalette: ['#1e3a5f', '#c4a35a', '#8b4513', '#f7f3ec'],
+    artisanId: artisanRenji,
+    linenItemId: linenPrimissima,
+    lat: -6.539,
+    lng: 111.455,
+    isFeatured: true,
+    visualSeed: 'sekar-jagad-demo',
+  });
+  await upsertStoryboardMotif({
+    code: 'DEMO-SB-PR',
+    title: 'Parang Rusak (demo)',
+    summary: `${DEMO}. Fictional gallery entry inspired by Storyboard “New Additions” layout — not authenticated Yogyakarta research data.`,
+    story: `${DEMO}. Synthetic royal/philosophy narrative for filter and card demos only.`,
+    region: 'Yogyakarta',
+    era: 'Pre-colonial',
+    symbolism: ['Royal', 'Philosophy'],
+    fabricType: 'Mori cloth (demo)',
+    colorPalette: ['#2c1810', '#a67c52', '#d4c4a8'],
+    artisanId: artisanBudi,
+    linenItemId: linenMori,
+    lat: -7.795,
+    lng: 110.369,
+    visualSeed: 'parang-demo',
+  });
+  await upsertStoryboardMotif({
+    code: 'DEMO-SB-MM',
+    title: 'Mega Mendung (demo)',
+    summary: `${DEMO}. Fictional cloud-pattern card for multi-region browse. Not Cirebon research data.`,
+    story: `${DEMO}. Placeholder nature/philosophy story for Motif Explorer.`,
+    region: 'Cirebon',
+    era: 'Colonial',
+    symbolism: ['Nature', 'Philosophy'],
+    fabricType: 'Mori cloth (demo)',
+    colorPalette: ['#1a3a5c', '#4a7c9b', '#e8eef2'],
+    artisanId: artisanSari,
+    linenItemId: linenMori,
+    lat: -6.732,
+    lng: 108.552,
+    visualSeed: 'mega-demo',
+  });
+  await upsertStoryboardMotif({
+    code: 'DEMO-SB-KW',
+    title: 'Kawung (demo)',
+    summary: `${DEMO}. Fictional geometric card for Storyboard grid — not Solo court research.`,
+    story: `${DEMO}. Synthetic geometric/philosophy copy for detail and AR texture demos.`,
+    region: 'Solo',
+    era: 'Pre-colonial',
+    symbolism: ['Geometric', 'Philosophy'],
+    fabricType: 'Pricis blend (demo)',
+    colorPalette: ['#3d2914', '#c9a227', '#f0e6d2'],
+    artisanId: artisanBudi,
+    linenItemId: linenPricis,
+    lat: -7.566,
+    lng: 110.816,
+    visualSeed: 'kawung-demo',
+  });
+  await upsertStoryboardMotif({
+    code: 'DEMO-SB-LAT',
+    title: 'Lasem Lattice Bloom (demo)',
+    summary: `${DEMO}. Extra Lasem-scoped fictional motif to keep the pilot domain visible in the map and gallery.`,
+    story: `${DEMO}. Invented Lasem coastal lattice narrative for Storyboard browse modes.`,
+    region: 'Lasem',
+    era: 'Colonial',
+    symbolism: ['Flora', 'Nature'],
+    fabricType: 'Primissima cotton (demo)',
+    colorPalette: ['#6b2d3c', '#d4a574', '#1e3a5f'],
+    artisanId: artisanSari,
+    linenItemId: linenPrimissima,
+    lat: -6.542,
+    lng: 111.448,
+    visualSeed: 'lattice-bloom-demo',
+  });
+  await upsertStoryboardMotif({
+    code: 'DEMO-SB-WAVE',
+    title: 'Pesisir Wave Band (demo)',
+    summary: `${DEMO}. Fictional coastal band motif for AR sofa texture and linen linkage demos.`,
+    story: `${DEMO}. Synthetic wave-band history text — exploratory UI content only.`,
+    region: 'Lasem',
+    era: 'Colonial',
+    symbolism: ['Nature', 'Geometric'],
+    fabricType: 'Primissima cotton (demo)',
+    colorPalette: ['#0f4c5c', '#e8d5b7', '#8b4513'],
+    artisanId: artisanRenji,
+    linenItemId: linenPrimissima,
+    lat: -6.536,
+    lng: 111.47,
+    visualSeed: 'wave-band-demo',
+  });
+
   void analysisCalA;
   void visitorId;
   console.log(
     [
-      'Seed complete (Phase 1 + Phase 2 Hue Seer + Phase 3 Lasem Guru + Phase 4 Dress Weaver + Phase 5 Research Lab).',
+      'Seed complete (Phase 1 + Phase 2 Hue Seer + Phase 3 Lasem Guru + Phase 4 Dress Weaver + Phase 5 Research Lab + Motif Storyboard).',
       `Demo password for *@demo.bcip.local: ${DEMO_PASSWORD}`,
       'Users: visitor, designer, researcher, steward, admin @demo.bcip.local',
       'Motifs: DEMO-MOTIF-A/B (public), DEMO-MOTIF-R (research), DEMO-MOTIF-X (restricted)',
+      'Storyboard motifs: DEMO-SB-SJ (featured), DEMO-SB-PR, DEMO-SB-MM, DEMO-SB-KW, DEMO-SB-LAT, DEMO-SB-WAVE',
+      'Artisans: DEMO-ART-RENJI, DEMO-ART-SARI, DEMO-ART-BUDI',
+      'Linen: DEMO-LINEN-PRIM, DEMO-LINEN-MORI, DEMO-LINEN-PRICIS',
+      'Explore UI: /explore , /explore/motifs , /explore/artisans , /explore/linen , /explore/map',
       'Withdrawn sample: DEMO-SAMPLE-W1',
       'Hue Seer analyses: DEMO-ANALYSIS-EXPL-A, DEMO-ANALYSIS-EXPL-B, DEMO-ANALYSIS-CAL-A',
       'Hue Seer assets: demo/fictional/hue-seer-a.png, demo/fictional/hue-seer-b.png',

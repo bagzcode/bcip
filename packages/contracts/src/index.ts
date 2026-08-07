@@ -205,6 +205,15 @@ export const MembershipRoleSchema = z.enum([
 ]);
 export type MembershipRole = z.infer<typeof MembershipRoleSchema>;
 
+const csvOrArray = z
+  .union([z.string(), z.array(z.string())])
+  .optional()
+  .transform((v) => {
+    if (!v) return [] as string[];
+    const parts = Array.isArray(v) ? v : v.split(',');
+    return parts.map((s) => s.trim()).filter(Boolean);
+  });
+
 export const CatalogueListQuerySchema = z.object({
   q: z.string().trim().max(200).optional().default(''),
   collectionCode: z.string().trim().min(1).max(64).optional(),
@@ -212,10 +221,62 @@ export const CatalogueListQuerySchema = z.object({
   accessTier: AccessTierSchema.optional(),
   language: z.string().trim().min(2).max(16).optional(),
   demoOnly: z.coerce.boolean().optional().default(false),
+  /** Storyboard gallery filters (multi-select). */
+  regions: csvOrArray.pipe(z.array(z.string().min(1).max(64)).max(32)).optional().default([]),
+  eras: csvOrArray.pipe(z.array(z.string().min(1).max(64)).max(32)).optional().default([]),
+  symbolism: csvOrArray.pipe(z.array(z.string().min(1).max(64)).max(32)).optional().default([]),
   limit: z.coerce.number().int().min(1).max(100).optional().default(24),
   offset: z.coerce.number().int().min(0).optional().default(0),
 });
 export type CatalogueListQuery = z.infer<typeof CatalogueListQuerySchema>;
+
+export const ArtisanListQuerySchema = z.object({
+  q: z.string().trim().max(200).optional().default(''),
+  region: z.string().trim().min(1).max(64).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(24),
+  offset: z.coerce.number().int().min(0).optional().default(0),
+});
+export type ArtisanListQuery = z.infer<typeof ArtisanListQuerySchema>;
+
+export const LinenListQuerySchema = z.object({
+  q: z.string().trim().max(200).optional().default(''),
+  region: z.string().trim().min(1).max(64).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(24),
+  offset: z.coerce.number().int().min(0).optional().default(0),
+});
+export type LinenListQuery = z.infer<typeof LinenListQuerySchema>;
+
+export const StoryboardArtisanSchema = z.object({
+  id: z.string().uuid(),
+  publicCode: z.string().min(1),
+  displayName: z.string().min(1),
+  bio: z.string(),
+  region: z.string().nullable().optional(),
+  originLat: z.number().nullable().optional(),
+  originLng: z.number().nullable().optional(),
+  visualSeed: z.string(),
+  accessTier: AccessTierSchema,
+  reviewStatus: ReviewStatusSchema.optional(),
+  isDemoFictional: z.boolean(),
+  status: z.string(),
+});
+export type StoryboardArtisan = z.infer<typeof StoryboardArtisanSchema>;
+
+export const StoryboardLinenSchema = z.object({
+  id: z.string().uuid(),
+  publicCode: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string(),
+  fiberType: z.string().nullable().optional(),
+  weaveNotes: z.string().nullable().optional(),
+  region: z.string().nullable().optional(),
+  visualSeed: z.string(),
+  accessTier: AccessTierSchema,
+  reviewStatus: ReviewStatusSchema.optional(),
+  isDemoFictional: z.boolean(),
+  status: z.string(),
+});
+export type StoryboardLinen = z.infer<typeof StoryboardLinenSchema>;
 
 export const CatalogueItemSchema = z.object({
   id: z.string().uuid(),

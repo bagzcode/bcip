@@ -2,9 +2,11 @@ import { eq, inArray, or } from 'drizzle-orm';
 import type { AccessTier, CatalogueListQuery, ReviewStatus } from '@bcip/contracts';
 import {
   accessPolicies,
+  artisans,
   claimSources,
   collections,
   knowledgeClaims,
+  linenItems,
   motifs,
   samples,
   sourceFragments,
@@ -15,7 +17,9 @@ import {
   exportMetadataCsv,
   exportMetadataJson,
   filterCatalogueRows,
+  filterStoryboardMotifs,
   resolveCatalogueDetail,
+  resolveStoryboardEntity,
   type ActorContext,
   type CatalogueRow,
 } from '@bcip/domain';
@@ -26,6 +30,22 @@ export type MotifListItem = CatalogueRow & {
   language: string;
   collectionCode: string;
   collectionId: string;
+  region: string | null;
+  era: string | null;
+  symbolism: string[];
+  fabricType: string | null;
+  colorPalette: string[];
+  story: string | null;
+  artisanId: string | null;
+  linenItemId: string | null;
+  originLat: number | null;
+  originLng: number | null;
+  isFeatured: boolean;
+  visualSeed: string;
+  artisanCode: string | null;
+  artisanName: string | null;
+  linenCode: string | null;
+  linenTitle: string | null;
 };
 
 export type CollectionDetail = CatalogueRow & {
@@ -47,9 +67,41 @@ export type ClaimView = {
   sourceCitations: string[];
 };
 
+export type ArtisanView = {
+  id: string;
+  publicCode: string;
+  displayName: string;
+  bio: string;
+  region: string | null;
+  originLat: number | null;
+  originLng: number | null;
+  visualSeed: string;
+  accessTier: AccessTier;
+  reviewStatus: ReviewStatus;
+  isDemoFictional: boolean;
+  status: string;
+};
+
+export type LinenView = {
+  id: string;
+  publicCode: string;
+  title: string;
+  description: string;
+  fiberType: string | null;
+  weaveNotes: string | null;
+  region: string | null;
+  visualSeed: string;
+  accessTier: AccessTier;
+  reviewStatus: ReviewStatus;
+  isDemoFictional: boolean;
+  status: string;
+};
+
 export type MotifDetailView = MotifListItem & {
   claims: ClaimView[];
   samples: CatalogueRow[];
+  artisan: ArtisanView | null;
+  linen: LinenView | null;
 };
 
 export type SampleDetailView = CatalogueRow & {
@@ -77,6 +129,22 @@ type MotifJoinRow = {
   collectionId: string;
   collectionCode: string;
   accessTier: AccessTier | null;
+  region: string | null;
+  era: string | null;
+  symbolism: string[] | null;
+  fabricType: string | null;
+  colorPalette: string[] | null;
+  story: string | null;
+  artisanId: string | null;
+  linenItemId: string | null;
+  originLat: number | null;
+  originLng: number | null;
+  isFeatured: boolean;
+  visualSeed: string;
+  artisanCode: string | null;
+  artisanName: string | null;
+  linenCode: string | null;
+  linenTitle: string | null;
 };
 
 function toMotifItem(row: MotifJoinRow): MotifListItem {
@@ -92,6 +160,22 @@ function toMotifItem(row: MotifJoinRow): MotifListItem {
     collectionId: row.collectionId,
     collectionCode: row.collectionCode,
     accessTier: asTier(row.accessTier),
+    region: row.region,
+    era: row.era,
+    symbolism: row.symbolism ?? [],
+    fabricType: row.fabricType,
+    colorPalette: row.colorPalette ?? [],
+    story: row.story,
+    artisanId: row.artisanId,
+    linenItemId: row.linenItemId,
+    originLat: row.originLat,
+    originLng: row.originLng,
+    isFeatured: row.isFeatured,
+    visualSeed: row.visualSeed,
+    artisanCode: row.artisanCode,
+    artisanName: row.artisanName,
+    linenCode: row.linenCode,
+    linenTitle: row.linenTitle,
   };
 }
 
@@ -110,10 +194,28 @@ async function loadMotifJoinRows(codes?: string[]): Promise<MotifJoinRow[]> {
       collectionId: motifs.collectionId,
       collectionCode: collections.publicCode,
       accessTier: accessPolicies.accessTier,
+      region: motifs.region,
+      era: motifs.era,
+      symbolism: motifs.symbolism,
+      fabricType: motifs.fabricType,
+      colorPalette: motifs.colorPalette,
+      story: motifs.story,
+      artisanId: motifs.artisanId,
+      linenItemId: motifs.linenItemId,
+      originLat: motifs.originLat,
+      originLng: motifs.originLng,
+      isFeatured: motifs.isFeatured,
+      visualSeed: motifs.visualSeed,
+      artisanCode: artisans.publicCode,
+      artisanName: artisans.displayName,
+      linenCode: linenItems.publicCode,
+      linenTitle: linenItems.title,
     })
     .from(motifs)
     .innerJoin(collections, eq(motifs.collectionId, collections.id))
-    .leftJoin(accessPolicies, eq(motifs.accessPolicyId, accessPolicies.id));
+    .leftJoin(accessPolicies, eq(motifs.accessPolicyId, accessPolicies.id))
+    .leftJoin(artisans, eq(motifs.artisanId, artisans.id))
+    .leftJoin(linenItems, eq(motifs.linenItemId, linenItems.id));
 
   if (codes?.length) {
     return base.where(inArray(motifs.publicCode, codes));
@@ -121,13 +223,19 @@ async function loadMotifJoinRows(codes?: string[]): Promise<MotifJoinRow[]> {
   return base;
 }
 
-function applyListFilters(items: MotifListItem[], query: CatalogueListQuery): MotifListItem[] {
-  const q = query.q.trim().toLowerCase();
-  return items.filter((item) => {
-    if (q) {
-      const hay = `${item.title} ${item.publicCode} ${item.summary}`.toLowerCase();
-      if (!hay.includes(q)) return false;
-    }
+function applyListFilters(
+  actor: ActorContext,
+  items: MotifListItem[],
+  query: CatalogueListQuery,
+): MotifListItem[] {
+  const storyboardFiltered = filterStoryboardMotifs(actor, items, {
+    q: query.q,
+    regions: query.regions,
+    eras: query.eras,
+    symbolism: query.symbolism,
+  }) as MotifListItem[];
+
+  return storyboardFiltered.filter((item) => {
     if (query.collectionCode && item.collectionCode !== query.collectionCode) return false;
     if (query.reviewStatus && item.reviewStatus !== query.reviewStatus) return false;
     if (query.accessTier && item.accessTier !== query.accessTier) return false;
@@ -144,12 +252,326 @@ export async function listMotifs(
 ): Promise<{ items: MotifListItem[]; total: number }> {
   const rows = await loadMotifJoinRows();
   const mapped = rows.map(toMotifItem);
-  const allowedIds = new Set(filterCatalogueRows(actor, mapped).map((r) => r.id));
-  const visible = mapped.filter((m) => allowedIds.has(m.id));
-  const filtered = applyListFilters(visible, query);
+  const filtered = applyListFilters(actor, mapped, query);
   const total = filtered.length;
   const items = filtered.slice(query.offset, query.offset + query.limit);
   return { items, total };
+}
+
+export async function listFeaturedMotifs(
+  actor: ActorContext,
+  limit = 1,
+): Promise<MotifListItem[]> {
+  const { items } = await listMotifs(actor, {
+    q: '',
+    demoOnly: false,
+    regions: [],
+    eras: [],
+    symbolism: [],
+    limit: 48,
+    offset: 0,
+  });
+  const featured = items.filter((m) => m.isFeatured);
+  return (featured.length ? featured : items).slice(0, limit);
+}
+
+export async function listNewAdditionMotifs(
+  actor: ActorContext,
+  limit = 4,
+): Promise<MotifListItem[]> {
+  const { items } = await listMotifs(actor, {
+    q: '',
+    demoOnly: false,
+    regions: [],
+    eras: [],
+    symbolism: [],
+    limit: 48,
+    offset: 0,
+  });
+  const storyboard = items.filter((m) => m.publicCode.startsWith('DEMO-SB-'));
+  return (storyboard.length ? storyboard : items).slice(0, limit);
+}
+
+export async function listMotifFilterOptions(actor: ActorContext): Promise<{
+  regions: string[];
+  eras: string[];
+  symbolism: string[];
+}> {
+  const { items } = await listMotifs(actor, {
+    q: '',
+    demoOnly: false,
+    regions: [],
+    eras: [],
+    symbolism: [],
+    limit: 100,
+    offset: 0,
+  });
+  const regions = [...new Set(items.map((m) => m.region).filter(Boolean))] as string[];
+  const eras = [...new Set(items.map((m) => m.era).filter(Boolean))] as string[];
+  const symbolism = [...new Set(items.flatMap((m) => m.symbolism))];
+  return {
+    regions: regions.sort(),
+    eras: eras.sort(),
+    symbolism: symbolism.sort(),
+  };
+}
+
+function toArtisanView(row: {
+  id: string;
+  publicCode: string;
+  displayName: string;
+  bio: string;
+  region: string | null;
+  originLat: number | null;
+  originLng: number | null;
+  visualSeed: string;
+  reviewStatus: ReviewStatus;
+  status: string;
+  isDemoFictional: boolean;
+  accessTier: AccessTier | null;
+}): ArtisanView {
+  return {
+    id: row.id,
+    publicCode: row.publicCode,
+    displayName: row.displayName,
+    bio: row.bio,
+    region: row.region,
+    originLat: row.originLat,
+    originLng: row.originLng,
+    visualSeed: row.visualSeed,
+    accessTier: asTier(row.accessTier),
+    reviewStatus: row.reviewStatus,
+    isDemoFictional: row.isDemoFictional,
+    status: row.status,
+  };
+}
+
+function toLinenView(row: {
+  id: string;
+  publicCode: string;
+  title: string;
+  description: string;
+  fiberType: string | null;
+  weaveNotes: string | null;
+  region: string | null;
+  visualSeed: string;
+  reviewStatus: ReviewStatus;
+  status: string;
+  isDemoFictional: boolean;
+  accessTier: AccessTier | null;
+}): LinenView {
+  return {
+    id: row.id,
+    publicCode: row.publicCode,
+    title: row.title,
+    description: row.description,
+    fiberType: row.fiberType,
+    weaveNotes: row.weaveNotes,
+    region: row.region,
+    visualSeed: row.visualSeed,
+    accessTier: asTier(row.accessTier),
+    reviewStatus: row.reviewStatus,
+    isDemoFictional: row.isDemoFictional,
+    status: row.status,
+  };
+}
+
+export async function listArtisans(
+  actor: ActorContext,
+  opts: { q?: string; region?: string; limit?: number; offset?: number } = {},
+): Promise<{ items: ArtisanView[]; total: number }> {
+  const db = getDb();
+  const rows = await db
+    .select({
+      id: artisans.id,
+      publicCode: artisans.publicCode,
+      displayName: artisans.displayName,
+      bio: artisans.bio,
+      region: artisans.region,
+      originLat: artisans.originLat,
+      originLng: artisans.originLng,
+      visualSeed: artisans.visualSeed,
+      reviewStatus: artisans.reviewStatus,
+      status: artisans.status,
+      isDemoFictional: artisans.isDemoFictional,
+      accessTier: accessPolicies.accessTier,
+    })
+    .from(artisans)
+    .leftJoin(accessPolicies, eq(artisans.accessPolicyId, accessPolicies.id));
+
+  const mapped = rows.map(toArtisanView);
+  const visible = mapped.filter((row) =>
+    Boolean(
+      resolveStoryboardEntity(actor, {
+        accessTier: row.accessTier,
+        status: row.status,
+        reviewStatus: row.reviewStatus,
+      }),
+    ),
+  );
+  const q = (opts.q ?? '').trim().toLowerCase();
+  const filtered = visible.filter((row) => {
+    if (opts.region && (row.region ?? '') !== opts.region) return false;
+    if (!q) return true;
+    return `${row.displayName} ${row.publicCode} ${row.bio} ${row.region ?? ''}`
+      .toLowerCase()
+      .includes(q);
+  });
+  const limit = opts.limit ?? 24;
+  const offset = opts.offset ?? 0;
+  return { items: filtered.slice(offset, offset + limit), total: filtered.length };
+}
+
+export async function getArtisanByCode(
+  actor: ActorContext,
+  code: string,
+): Promise<(ArtisanView & { motifs: MotifListItem[] }) | null> {
+  const { items } = await listArtisans(actor, { limit: 100 });
+  const artisan = items.find((a) => a.publicCode === code) ?? null;
+  if (!artisan) return null;
+  const { items: motifsForArtisan } = await listMotifs(actor, {
+    q: '',
+    demoOnly: false,
+    regions: [],
+    eras: [],
+    symbolism: [],
+    limit: 100,
+    offset: 0,
+  });
+  return {
+    ...artisan,
+    motifs: motifsForArtisan.filter((m) => m.artisanId === artisan.id),
+  };
+}
+
+export async function listLinenItems(
+  actor: ActorContext,
+  opts: { q?: string; region?: string; limit?: number; offset?: number } = {},
+): Promise<{ items: LinenView[]; total: number }> {
+  const db = getDb();
+  const rows = await db
+    .select({
+      id: linenItems.id,
+      publicCode: linenItems.publicCode,
+      title: linenItems.title,
+      description: linenItems.description,
+      fiberType: linenItems.fiberType,
+      weaveNotes: linenItems.weaveNotes,
+      region: linenItems.region,
+      visualSeed: linenItems.visualSeed,
+      reviewStatus: linenItems.reviewStatus,
+      status: linenItems.status,
+      isDemoFictional: linenItems.isDemoFictional,
+      accessTier: accessPolicies.accessTier,
+    })
+    .from(linenItems)
+    .leftJoin(accessPolicies, eq(linenItems.accessPolicyId, accessPolicies.id));
+
+  const mapped = rows.map(toLinenView);
+  const visible = mapped.filter((row) =>
+    Boolean(
+      resolveStoryboardEntity(actor, {
+        accessTier: row.accessTier,
+        status: row.status,
+        reviewStatus: row.reviewStatus,
+      }),
+    ),
+  );
+  const q = (opts.q ?? '').trim().toLowerCase();
+  const filtered = visible.filter((row) => {
+    if (opts.region && (row.region ?? '') !== opts.region) return false;
+    if (!q) return true;
+    return `${row.title} ${row.publicCode} ${row.description} ${row.region ?? ''}`
+      .toLowerCase()
+      .includes(q);
+  });
+  const limit = opts.limit ?? 24;
+  const offset = opts.offset ?? 0;
+  return { items: filtered.slice(offset, offset + limit), total: filtered.length };
+}
+
+export async function getLinenByCode(
+  actor: ActorContext,
+  code: string,
+): Promise<(LinenView & { motifs: MotifListItem[] }) | null> {
+  const { items } = await listLinenItems(actor, { limit: 100 });
+  const linen = items.find((l) => l.publicCode === code) ?? null;
+  if (!linen) return null;
+  const { items: allMotifs } = await listMotifs(actor, {
+    q: '',
+    demoOnly: false,
+    regions: [],
+    eras: [],
+    symbolism: [],
+    limit: 100,
+    offset: 0,
+  });
+  return {
+    ...linen,
+    motifs: allMotifs.filter((m) => m.linenItemId === linen.id),
+  };
+}
+
+export type MapPin =
+  | {
+      kind: 'motif';
+      code: string;
+      title: string;
+      region: string | null;
+      lat: number;
+      lng: number;
+      isDemoFictional: boolean;
+    }
+  | {
+      kind: 'artisan';
+      code: string;
+      title: string;
+      region: string | null;
+      lat: number;
+      lng: number;
+      isDemoFictional: boolean;
+    };
+
+export async function listMapPins(actor: ActorContext): Promise<MapPin[]> {
+  const [{ items: motifItems }, { items: artisanItems }] = await Promise.all([
+    listMotifs(actor, {
+      q: '',
+      demoOnly: false,
+      regions: [],
+      eras: [],
+      symbolism: [],
+      limit: 100,
+      offset: 0,
+    }),
+    listArtisans(actor, { limit: 100 }),
+  ]);
+
+  const pins: MapPin[] = [];
+  for (const m of motifItems) {
+    if (m.originLat == null || m.originLng == null) continue;
+    pins.push({
+      kind: 'motif',
+      code: m.publicCode,
+      title: m.title,
+      region: m.region,
+      lat: m.originLat,
+      lng: m.originLng,
+      isDemoFictional: Boolean(m.isDemoFictional),
+    });
+  }
+  for (const a of artisanItems) {
+    if (a.originLat == null || a.originLng == null) continue;
+    pins.push({
+      kind: 'artisan',
+      code: a.publicCode,
+      title: a.displayName,
+      region: a.region,
+      lat: a.originLat,
+      lng: a.originLng,
+      isDemoFictional: Boolean(a.isDemoFictional),
+    });
+  }
+  return pins;
 }
 
 export async function listCollectionOptions(
@@ -225,6 +647,9 @@ export async function getCollectionByCode(
     q: '',
     collectionCode: code,
     demoOnly: false,
+    regions: [],
+    eras: [],
+    symbolism: [],
     limit: 100,
     offset: 0,
   });
@@ -379,9 +804,11 @@ export async function getMotifByCode(
   const detail = resolveCatalogueDetail(actor, item);
   if (!detail) return null;
 
-  const [claims, sampleRows] = await Promise.all([
+  const [claims, sampleRows, artisanList, linenList] = await Promise.all([
     loadClaimsFor(actor, { motifId: item.id }),
     loadSamplesForMotif(actor, item.id),
+    item.artisanCode ? getArtisanByCode(actor, item.artisanCode) : Promise.resolve(null),
+    item.linenCode ? getLinenByCode(actor, item.linenCode) : Promise.resolve(null),
   ]);
 
   return {
@@ -389,6 +816,38 @@ export async function getMotifByCode(
     ...detail,
     claims,
     samples: sampleRows,
+    artisan: artisanList
+      ? {
+          id: artisanList.id,
+          publicCode: artisanList.publicCode,
+          displayName: artisanList.displayName,
+          bio: artisanList.bio,
+          region: artisanList.region,
+          originLat: artisanList.originLat,
+          originLng: artisanList.originLng,
+          visualSeed: artisanList.visualSeed,
+          accessTier: artisanList.accessTier,
+          reviewStatus: artisanList.reviewStatus,
+          isDemoFictional: artisanList.isDemoFictional,
+          status: artisanList.status,
+        }
+      : null,
+    linen: linenList
+      ? {
+          id: linenList.id,
+          publicCode: linenList.publicCode,
+          title: linenList.title,
+          description: linenList.description,
+          fiberType: linenList.fiberType,
+          weaveNotes: linenList.weaveNotes,
+          region: linenList.region,
+          visualSeed: linenList.visualSeed,
+          accessTier: linenList.accessTier,
+          reviewStatus: linenList.reviewStatus,
+          isDemoFictional: linenList.isDemoFictional,
+          status: linenList.status,
+        }
+      : null,
   };
 }
 
@@ -475,6 +934,9 @@ export async function buildCatalogueExport(
     collectionCode: query.collectionCode,
     accessTier: query.accessTier,
     demoOnly: query.includeDemoOnly ?? false,
+    regions: [],
+    eras: [],
+    symbolism: [],
     limit: 100,
     offset: 0,
   });

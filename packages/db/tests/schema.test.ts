@@ -4,6 +4,7 @@ import {
   accessPolicies,
   answerCitations,
   answerFeedback,
+  artisans,
   assets,
   assistantRuns,
   auditEvents,
@@ -29,6 +30,7 @@ import {
   instrumentItems,
   instruments,
   knowledgeClaims,
+  linenItems,
   memberships,
   motifs,
   participants,
@@ -52,6 +54,11 @@ describe('schema', () => {
     expect(getTableName(motifs)).toBe('motifs');
     expect(getTableName(samples)).toBe('samples');
     expect(getTableName(assets)).toBe('assets');
+  });
+
+  it('exposes Motif Explorer Storyboard tables', () => {
+    expect(getTableName(artisans)).toBe('artisans');
+    expect(getTableName(linenItems)).toBe('linen_items');
   });
 
   it('exposes Phase 1 governance tables', () => {
