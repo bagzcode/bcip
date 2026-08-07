@@ -8,7 +8,7 @@ alwaysApply: true
 Shared updates must land on **both** remotes:
 
 - `github` → `https://github.com/bagzcode/bcip.git`
-- `local` → `http://localhost:3000/git/BCIP/BCIP.git`
+- `local` → `http://localhost:3020/git/BCIP/BCIP.git`
 
 After any commit that should be shared (or when the user asks to push), run dual push:
 
