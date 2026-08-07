@@ -1,0 +1,15 @@
+---
+description: User experience and research-data requirements
+alwaysApply: true
+---
+
+# UI and Research Rules
+
+- Support Indonesian and English architecture from the beginning.
+- Meet WCAG 2.2 AA for core journeys.
+- Public browsing should be mobile responsive; Dress Weaver may be desktop-first but must remain usable on tablets.
+- Show provenance, review status, access status, and uncertainty near cultural information.
+- Use persistent IDs and visible version labels on research-critical objects.
+- Research exports include a codebook and reproducibility manifest.
+- Usage analytics are not automatically research data. Study collection requires approved consent and protocol.
+- Never present exploratory photo color values as calibrated scientific measurements.

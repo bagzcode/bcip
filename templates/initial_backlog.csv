@@ -1,0 +1,13 @@
+ID,Phase,Module,Story,Priority,Acceptance Summary
+BCIP-001,0,Platform,Create pnpm Turborepo monorepo,Must,Web and AI workspaces install and build
+BCIP-002,0,Infrastructure,Create Docker Compose development stack,Must,All services have health checks
+BCIP-003,0,Database,Initialize PostgreSQL and pgvector migrations,Must,Migration and rollback workflow documented
+BCIP-004,0,Identity,Add basic Better Auth integration,Must,Protected workspace validates session server-side
+BCIP-005,0,Quality,Add CI lint type test build,Must,Pipeline passes on clean checkout
+BCIP-101,1,Governance,Implement access policies and permitted purposes,Must,Unauthorized records are invisible across query paths
+BCIP-102,1,Catalogue,Implement collections motifs samples assets,Must,Persistent IDs and versioned assets
+BCIP-103,1,Motif Explorer,Build browse search filter detail compare,Must,Public and restricted tests pass
+BCIP-201,2,Hue Seer,Implement async image analysis baseline,Must,Versioned reproducible result
+BCIP-301,3,Lasem Guru,Implement grounded bilingual Q&A,Must,Citations required for factual claims
+BCIP-401,4,Dress Weaver,Implement deterministic 2D design versions,Should,Reload reproduces design
+BCIP-501,5,Research Lab,Implement pilot study and export,Must,Codebook and manifest included

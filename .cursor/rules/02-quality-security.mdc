@@ -1,0 +1,19 @@
+---
+description: Quality, testing, security, and operational standards
+alwaysApply: true
+---
+
+# Quality and Security Rules
+
+- Use current stable dependencies and pin them in the lockfile. Do not use canary/beta packages without an ADR.
+- Never commit secrets, personal participant data, consent documents, or restricted cultural assets.
+- Validate request input with Zod and Pydantic.
+- Use TypeScript strict mode and Python type hints.
+- Add tests for domain rules, permissions, restricted-data leakage, and critical user flows.
+- Use transactions for multi-table operations.
+- Use structured errors and request IDs.
+- Use signed short-lived object URLs and verify uploads.
+- Use secure server-side session checks on every protected resource.
+- Do not log source text, chat context, participant responses, or uploaded content unless explicitly safe and necessary.
+- Every change must leave lint, type check, tests, and Docker health checks passing.
+- After completing a task, summarize files changed, commands run, tests, assumptions, and remaining risks.
