@@ -67,13 +67,14 @@ services:
       HOSTNAME: 0.0.0.0
       PORT: '3000'
       APP_URL: ${APP_URL:-http://localhost:3000}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://bcip:change-me@postgres:5432/bcip}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      # In-compose service DNS — do not inherit host .env localhost URLs.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-bcip}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-bcip}
+      REDIS_URL: redis://redis:6379/0
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-0123456789abcdef0123456789abcdef}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
-      AI_SERVICE_URL: ${AI_SERVICE_URL:-http://ai-api:8000}
+      AI_SERVICE_URL: http://ai-api:8000
       AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:-replace-me}
-      S3_ENDPOINT: ${S3_ENDPOINT:-http://object-storage:9000}
+      S3_ENDPOINT: http://object-storage:9000
       S3_REGION: ${S3_REGION:-us-east-1}
       S3_BUCKET_PRIVATE: ${S3_BUCKET_PRIVATE:-bcip-private}
       S3_BUCKET_PUBLIC: ${S3_BUCKET_PUBLIC:-bcip-public}
@@ -110,10 +111,11 @@ services:
       dockerfile: infrastructure/docker/ai.Dockerfile
     command: ['uvicorn', 'bcip_ai.main:app', '--host', '0.0.0.0', '--port', '8000']
     environment:
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://bcip:change-me@postgres:5432/bcip}
+      # In-compose service DNS — do not inherit host .env localhost URLs.
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql://${POSTGRES_USER:-bcip}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-bcip}
       AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:-replace-me}
-      S3_ENDPOINT: ${S3_ENDPOINT:-http://object-storage:9000}
+      S3_ENDPOINT: http://object-storage:9000
     depends_on:
       redis:
         condition: service_healthy
@@ -142,10 +144,11 @@ services:
       dockerfile: infrastructure/docker/ai.Dockerfile
     command: ['celery', '-A', 'bcip_ai.worker.app', 'worker', '--loglevel=INFO']
     environment:
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://bcip:change-me@postgres:5432/bcip}
+      # In-compose service DNS — do not inherit host .env localhost URLs.
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql://${POSTGRES_USER:-bcip}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-bcip}
       AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:-replace-me}
-      S3_ENDPOINT: ${S3_ENDPOINT:-http://object-storage:9000}
+      S3_ENDPOINT: http://object-storage:9000
     depends_on:
       redis:
         condition: service_healthy
