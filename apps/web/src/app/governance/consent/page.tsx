@@ -3,9 +3,13 @@ import { getLocale } from '@/i18n/get-locale';
 import { t } from '@/i18n/messages';
 import { listConsentBundle, safeQuery } from '@/lib/governance/queries';
 
+export const dynamic = 'force-dynamic';
+
 export default async function GovernanceConsentPage() {
   const locale = await getLocale();
   const data = await safeQuery(listConsentBundle, { consents: [], attributions: [] });
+  const consents = data?.consents ?? [];
+  const attributions = data?.attributions ?? [];
 
   return (
     <div>
@@ -15,11 +19,11 @@ export default async function GovernanceConsentPage() {
       </p>
 
       <h3 style={{ marginTop: '1.75rem' }}>Consent records</h3>
-      {data.consents.length === 0 ? (
+      {consents.length === 0 ? (
         <p className="gov-meta">No consent rows loaded. Run seed for fictional demo data.</p>
       ) : (
         <ul className="gov-list">
-          {data.consents.map((consent) => (
+          {consents.map((consent) => (
             <li key={consent.id} className="gov-item">
               <div className="gov-item-head">
                 <strong>{consent.versionLabel}</strong>
@@ -37,7 +41,7 @@ export default async function GovernanceConsentPage() {
               <p>{consent.summary}</p>
               <p className="gov-meta">
                 Purposes:{' '}
-                {consent.purposes
+                {(consent.purposes ?? [])
                   .map((p) => `${p.purposeCode}${p.allowed ? '' : ' (denied)'}`)
                   .join(', ') || '—'}
               </p>
@@ -50,11 +54,11 @@ export default async function GovernanceConsentPage() {
       )}
 
       <h3 style={{ marginTop: '2rem' }}>Attribution preferences</h3>
-      {data.attributions.length === 0 ? (
+      {attributions.length === 0 ? (
         <p className="gov-meta">No attribution preferences loaded.</p>
       ) : (
         <ul className="gov-list">
-          {data.attributions.map((attr) => (
+          {attributions.map((attr) => (
             <li key={attr.id} className="gov-item">
               <div className="gov-item-head">
                 <strong>{attr.contributorName ?? attr.contributorId}</strong>

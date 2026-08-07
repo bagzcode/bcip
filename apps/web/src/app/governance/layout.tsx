@@ -5,6 +5,8 @@ import { t } from '@/i18n/messages';
 import { softGateGovernance } from '@/lib/governance-gate';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default async function GovernanceLayout({
   children,
 }: {

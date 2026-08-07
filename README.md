@@ -64,6 +64,21 @@ After `pnpm db:seed`, sign in at http://localhost:3000/sign-in
 
 Password for all demo users: `DemoPass123!`
 
+## Seed inventory (fictional)
+
+All cultural/demo rows are labelled `DEMO / FICTIONAL — NOT RESEARCH DATA`. Use these codes for manual testing after `pnpm db:migrate && pnpm db:seed`:
+
+| Module | Seed codes / entry points |
+| ------ | ------------------------- |
+| Motif Explorer | `DEMO-MOTIF-A/B` (public), `DEMO-MOTIF-R` (research), `DEMO-MOTIF-X` (restricted); samples `DEMO-SAMPLE-A1/B1/R1/X1`, withdrawn `DEMO-SAMPLE-W1`; collection `DEMO-COL-001` |
+| Hue Seer | Exploratory `DEMO-ANALYSIS-EXPL-A/B`, calibrated `DEMO-ANALYSIS-CAL-A`; UI `/hue-seer`, `/hue-seer/compare` |
+| Lasem Guru | Sources `DEMO-SRC-LG-001/002/R/X/INJ` (grounded Q&A; restricted/injection fixtures must not leak) |
+| Dress Weaver | Templates `DEMO-GARMENT-KAFTAN`, `DEMO-GARMENT-TUNIC`; project `/dress-weaver/DEMO-DESIGN-001` |
+| Research Lab | Study `/research/DEMO-STUDY-COLORWAY-001` (+ `/collect`, export JSON/CSV under `/api/research/.../export`) |
+| Governance | Access policies, consent, provenance sources/claims, review queue — open `/governance` as steward |
+
+Recommended walkthrough: sign in as `steward@demo.bcip.local` for governance/restricted fixtures; use `researcher@demo.bcip.local` for Research Lab; `designer@demo.bcip.local` for Hue Seer enqueue and Dress Weaver edits.
+
 ## Module URLs (local)
 
 | Module | URL |
