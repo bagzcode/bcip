@@ -2,7 +2,7 @@
 
 Multimodal, culturally grounded batik design-intelligence ecosystem connecting heritage data, color science, explainable AI, and fashion application. Pilot domain: **Batik Lasem**.
 
-Phase 0 delivers the monorepo foundation only. Product modules are scaffolded, not fully implemented.
+Phases 0–5 MVP surfaces are on `main` (Motif Explorer, Hue Seer, Lasem Guru, Dress Weaver, Research Lab, Governance Console). Demo cultural content is labelled fictional — never treat it as heritage fact.
 
 ## Prerequisites
 
@@ -50,6 +50,39 @@ pnpm stack:up       # build and start all services
 pnpm stack:down
 ```
 
+## Demo logins
+
+After `pnpm db:seed`, sign in at http://localhost:3000/sign-in
+
+| Email | Notes |
+| ----- | ----- |
+| `visitor@demo.bcip.local` | Public catalogue |
+| `designer@demo.bcip.local` | Uploads / Hue Seer enqueue |
+| `researcher@demo.bcip.local` | Research Lab + research_only tier |
+| `steward@demo.bcip.local` | Governance + restricted grant fixture |
+| `admin@demo.bcip.local` | Admin (still needs explicit grant for culturally_restricted) |
+
+Password for all demo users: `DemoPass123!`
+
+## Module URLs (local)
+
+| Module | URL |
+| ------ | --- |
+| Landing | http://localhost:3000/ |
+| Motif Explorer | http://localhost:3000/explore |
+| Hue Seer | http://localhost:3000/hue-seer |
+| Lasem Guru | http://localhost:3000/lasem-guru |
+| Dress Weaver | http://localhost:3000/dress-weaver |
+| Research Lab | http://localhost:3000/research |
+| Pilot study | http://localhost:3000/research/DEMO-STUDY-COLORWAY-001 |
+| Governance | http://localhost:3000/governance |
+| Workspace (auth) | http://localhost:3000/workspace |
+| Health dashboard | http://localhost:3000/system/health |
+| AI live | http://localhost:8000/health/live |
+| AI ready | http://localhost:8000/health/ready |
+| Postgres (host) | localhost:5433 |
+| MinIO console | http://localhost:9001 |
+
 ## Quality commands
 
 ```bash
@@ -63,26 +96,13 @@ pnpm build
 pnpm test:e2e
 ```
 
-## Key URLs
-
-| Surface                   | URL                                 |
-| ------------------------- | ----------------------------------- |
-| Web                       | http://localhost:3000               |
-| Explore (demo)            | http://localhost:3000/explore       |
-| Workspace (auth required) | http://localhost:3000/workspace     |
-| Health dashboard          | http://localhost:3000/system/health |
-| AI live                   | http://localhost:8000/health/live   |
-| AI ready                  | http://localhost:8000/health/ready  |
-| Postgres (host)           | localhost:5433                      |
-| MinIO console             | http://localhost:9001               |
-
 ## Cultural safety
 
-Demo motifs are labelled `DEMO / FICTIONAL — NOT RESEARCH DATA`. Do not invent Batik Lasem cultural meanings. Restricted operational data must never be committed — see `data/README.md`.
+Demo motifs, sources, analyses, designs, and studies are labelled `DEMO / FICTIONAL — NOT RESEARCH DATA`. Do not invent Batik Lasem cultural meanings. Restricted operational data must never be committed — see `data/README.md`.
 
 ## Documentation
 
 - Architecture and product docs: `docs/`
 - ADRs: `decisions/`
-- Phase 0 plan/report: `docs/implementation/`
+- Phase plans/reports: `docs/implementation/` (`PHASE_0` … `PHASE_5`)
 - Cursor rules: `.cursor/rules/`
