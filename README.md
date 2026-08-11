@@ -1,6 +1,8 @@
-# Batik Color Intelligence Platform (BCIP)
+# BCIP — Batik Design Intelligence Platform
 
-Multimodal, culturally grounded batik design-intelligence ecosystem connecting heritage data, color science, explainable AI, and fashion application. Pilot domain: **Batik Lasem**.
+Multimodal, culturally grounded **batik** design-intelligence ecosystem connecting heritage motifs, craft knowledge, color science, explainable guidance, and fashion application. Pilot domain: **Batik Lasem**.
+
+> **Naming note:** BCIP formerly expanded as “Batik Color Intelligence Platform.” Public surfaces now use **Batik Design Intelligence** (color remains the Hue Seer module). See `docs/implementation/BATIK_FIRST_REBRAND.md` and `apps/web/src/brand/identity.ts`.
 
 Phases 0–5 MVP surfaces are on `main` (Motif Explorer, Hue Seer, Lasem Guru, Dress Weaver, Research Lab, Governance Console). Demo cultural content is labelled fictional — never treat it as heritage fact.
 
