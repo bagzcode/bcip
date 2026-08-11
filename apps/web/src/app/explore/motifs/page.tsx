@@ -56,15 +56,19 @@ export default async function MotifGalleryPage({ searchParams }: { searchParams:
   }
 
   return (
-    <section>
-      <Badge>{t(locale, 'demoBadge')}</Badge>
-      <h1 style={{ marginTop: '0.75rem' }}>{t(locale, 'exploreNavMotifs')}</h1>
-      <p className="me-muted">{t(locale, 'exploreGalleryIntro')}</p>
-      <p>
-        <Link href="/explore/compare">{t(locale, 'exploreCompareLink')}</Link>
-        {' · '}
-        <Link href="/explore">{t(locale, 'exploreBack')}</Link>
-      </p>
+    <section className="me-gallery">
+      <div className="me-home__badge">
+        <Badge>{t(locale, 'demoBadge')}</Badge>
+      </div>
+      <header className="me-gallery__head">
+        <h1>{t(locale, 'exploreNavMotifs')}</h1>
+        <p className="me-muted">{t(locale, 'exploreGalleryIntro')}</p>
+        <p className="me-gallery__links">
+          <Link href="/explore/compare">{t(locale, 'exploreCompareLink')}</Link>
+          <span aria-hidden>·</span>
+          <Link href="/explore">{t(locale, 'exploreBack')}</Link>
+        </p>
+      </header>
 
       <Suspense fallback={null}>
         <GalleryFilters
@@ -81,7 +85,7 @@ export default async function MotifGalleryPage({ searchParams }: { searchParams:
       </Suspense>
 
       {unavailable ? (
-        <p role="alert" style={{ color: 'var(--bcip-clay)' }}>
+        <p role="alert" className="me-alert">
           {t(locale, 'exploreUnavailable')}
         </p>
       ) : items.length === 0 ? (
@@ -90,7 +94,7 @@ export default async function MotifGalleryPage({ searchParams }: { searchParams:
         </p>
       ) : (
         <>
-          <p className="me-muted">
+          <p className="me-muted me-gallery__count">
             {total} {t(locale, 'exploreResults')}
           </p>
           <div className="me-grid">
@@ -104,6 +108,9 @@ export default async function MotifGalleryPage({ searchParams }: { searchParams:
                 symbolism={motif.symbolism}
                 visualSeed={motif.visualSeed}
                 colorPalette={motif.colorPalette}
+                artisanName={motif.artisanName}
+                isDemoFictional={motif.isDemoFictional === true}
+                demoLabel={t(locale, 'exploreCardDemo')}
                 arLabel={t(locale, 'exploreTryAr')}
               />
             ))}

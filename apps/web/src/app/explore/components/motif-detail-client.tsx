@@ -45,6 +45,7 @@ export function MotifDetailClient({
   } | null;
   linen: { code: string; title: string; visualSeed: string } | null;
   labels: {
+    backHome: string;
     back: string;
     sketch: string;
     fabric: string;
@@ -59,18 +60,20 @@ export function MotifDetailClient({
     symbolism: string;
     artisan: string;
     tryAr: string;
-    toggleAr: string;
+    viewAr: string;
     map: string;
   };
 }) {
-  const [tab, setTab] = useState<Tab>('fabric');
-  const [showArHint, setShowArHint] = useState(false);
+  const [tab, setTab] = useState<Tab>('sketch');
 
   return (
     <div className="me-detail">
-      <p>
-        <Link href="/explore/motifs">← {labels.back}</Link>
+      <p className="me-detail__crumb">
+        <Link href="/explore">← {labels.backHome}</Link>
+        <span aria-hidden> · </span>
+        <Link href="/explore/motifs">{labels.back}</Link>
       </p>
+
       <header className="me-detail__header">
         <div>
           <h1>{title}</h1>
@@ -78,24 +81,10 @@ export function MotifDetailClient({
         </div>
         <div className="me-detail__actions">
           <Link className="me-btn me-btn--primary" href={`/explore/motifs/${code}/ar`}>
-            {labels.tryAr}
+            {labels.viewAr}
           </Link>
-          <button
-            type="button"
-            className="me-btn"
-            onClick={() => setShowArHint((v) => !v)}
-            aria-pressed={showArHint}
-          >
-            {labels.toggleAr}
-          </button>
         </div>
       </header>
-
-      {showArHint ? (
-        <p className="me-detail__ar-hint" role="status">
-          <Link href={`/explore/motifs/${code}/ar`}>{labels.tryAr}</Link>
-        </p>
-      ) : null}
 
       <div className="me-detail__gallery">
         <div className="me-detail__tabs" role="tablist" aria-label="Motif images">
@@ -151,7 +140,7 @@ export function MotifDetailClient({
             <dt>{labels.fabricType}</dt>
             <dd>
               {linen ? (
-                <Link href={`/explore/linen/${linen.code}`}>{linen.title}</Link>
+                <Link href={`/explore/linen/${linen.code}`}>{fabricType ?? linen.title}</Link>
               ) : (
                 fabricType ?? '—'
               )}
@@ -178,6 +167,7 @@ export function MotifDetailClient({
           <div className="me-artisan-block">
             <MotifVisual
               seed={artisan.visualSeed}
+              colors={colorPalette}
               variant="portrait"
               className="me-artisan-block__photo"
               label={artisan.name}

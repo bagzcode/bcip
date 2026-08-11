@@ -78,6 +78,7 @@ export default async function MotifDetailPage({ params }: { params: Params }) {
             : null
         }
         labels={{
+          backHome: t(locale, 'exploreBackHome'),
           back: t(locale, 'exploreNavMotifs'),
           sketch: t(locale, 'exploreTabSketch'),
           fabric: t(locale, 'exploreTabFabric'),
@@ -92,7 +93,7 @@ export default async function MotifDetailPage({ params }: { params: Params }) {
           symbolism: t(locale, 'exploreFilterSymbolism'),
           artisan: t(locale, 'exploreArtisan'),
           tryAr: t(locale, 'exploreTryAr'),
-          toggleAr: t(locale, 'exploreToggleAr'),
+          viewAr: t(locale, 'exploreViewAr'),
           map: t(locale, 'exploreOriginMap'),
         }}
       />

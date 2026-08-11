@@ -14,10 +14,12 @@ const LINKS = [
 export function ExploreNav({
   brand,
   searchPlaceholder,
+  searchSubmitLabel,
   labels,
 }: {
   brand: string;
   searchPlaceholder: string;
+  searchSubmitLabel: string;
   labels: Record<(typeof LINKS)[number]['key'], string>;
 }) {
   const pathname = usePathname();
@@ -41,6 +43,9 @@ export function ExploreNav({
           <label className="sr-only" htmlFor="me-search">
             {searchPlaceholder}
           </label>
+          <span className="me-nav__search-icon" aria-hidden>
+            ⌕
+          </span>
           <input
             id="me-search"
             name="q"
@@ -49,7 +54,9 @@ export function ExploreNav({
             placeholder={searchPlaceholder}
             autoComplete="off"
           />
-          <button type="submit">{labels.motifs}</button>
+          <button type="submit" className="me-nav__search-submit">
+            {searchSubmitLabel}
+          </button>
         </form>
         <nav className="me-nav__links" aria-label="Motif Explorer">
           {LINKS.map((link) => {

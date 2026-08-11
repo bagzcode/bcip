@@ -9,6 +9,7 @@ export default async function ExploreLayout({ children }: { children: React.Reac
       <ExploreNav
         brand={t(locale, 'exploreNavBrand')}
         searchPlaceholder={t(locale, 'exploreNavSearch')}
+        searchSubmitLabel={t(locale, 'exploreSearch')}
         labels={{
           motifs: t(locale, 'exploreNavMotifs'),
           artisans: t(locale, 'exploreNavArtisans'),
