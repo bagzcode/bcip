@@ -1,0 +1,131 @@
+/* Global header/footer chrome — shared shell, not Motif Explorer. */
+
+.site-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1.5rem;
+  border-bottom: 1px solid var(--bcip-border);
+  background: rgba(247, 243, 236, 0.88);
+  backdrop-filter: blur(6px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.site-header__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+}
+
+.site-header__acronym {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+  color: var(--bcip-indigo);
+}
+
+.site-header__name {
+  font-size: 0.72rem;
+  color: var(--bcip-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 14rem;
+}
+
+.site-header__nav {
+  display: flex;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  font-size: 0.92rem;
+}
+
+.site-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.site-footer {
+  border-top: 1px solid var(--bcip-border);
+  background: rgba(30, 58, 95, 0.04);
+  margin-top: auto;
+}
+
+.site-footer__inner {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 2.5rem;
+  display: grid;
+  gap: 1.75rem;
+}
+
+@media (min-width: 720px) {
+  .site-footer__inner {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.site-footer__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0 0 0.65rem;
+}
+
+.site-footer__acronym {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  letter-spacing: 0.06em;
+  color: var(--bcip-indigo);
+}
+
+.site-footer__name {
+  font-size: 0.95rem;
+  color: var(--bcip-ink);
+}
+
+.site-footer__blurb,
+.site-footer__scope {
+  margin: 0;
+  color: var(--bcip-muted);
+  font-size: 0.9rem;
+  max-width: 36rem;
+}
+
+.site-footer__scope {
+  margin-top: 0.65rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--bcip-focus);
+}
+
+.site-footer__nav-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bcip-muted);
+}
+
+.site-footer__links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}

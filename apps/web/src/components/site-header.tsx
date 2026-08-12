@@ -21,32 +21,14 @@ export async function SiteHeader({ locale }: { locale: Locale }) {
   const email = session?.user?.email ?? null;
 
   return (
-    <header
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: '1rem',
-        padding: '1rem 1.5rem',
-        borderBottom: '1px solid var(--bcip-border)',
-        background: 'rgba(251, 248, 242, 0.85)',
-        backdropFilter: 'blur(6px)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 10,
-      }}
-    >
-      <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-        <strong style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem' }}>BCIP</strong>
+    <header className="site-header">
+      <Link href="/" className="site-header__brand" aria-label={`${t(locale, 'brand')} (BCIP)`}>
+        <strong className="site-header__acronym">BCIP</strong>
+        <span className="site-header__name">{t(locale, 'brand')}</span>
       </Link>
       <nav
         aria-label="Primary"
-        style={{
-          display: 'flex',
-          gap: '0.85rem',
-          flexWrap: 'wrap',
-          fontSize: '0.92rem',
-        }}
+        className="site-header__nav"
       >
         {links.map((link) => (
           <Link key={link.href} href={link.href}>
@@ -54,7 +36,7 @@ export async function SiteHeader({ locale }: { locale: Locale }) {
           </Link>
         ))}
       </nav>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+      <div className="site-header__actions">
         <AuthNav locale={locale} email={email} />
         <LanguageSwitch locale={locale} />
       </div>

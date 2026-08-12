@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getLocale } from '@/i18n/get-locale';
 import { t, type MessageKey } from '@/i18n/messages';
+import './home.css';
 
 const modules: { href: string; titleKey: MessageKey; blurbKey: MessageKey }[] = [
   { href: '/explore', titleKey: 'navExplore', blurbKey: 'motifExplorerBlurb' },
@@ -15,41 +16,36 @@ export default async function HomePage() {
   const locale = await getLocale();
   return (
     <>
-      <section className="hero">
-        <p
-          style={{ letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--bcip-clay)' }}
-        >
+      <section className="home-hero" aria-labelledby="home-brand-title">
+        <div className="home-hero__motif" aria-hidden="true" />
+        <p className="home-hero__mark" aria-hidden="true">
           BCIP
         </p>
-        <h1>{t(locale, 'brand')}</h1>
-        <p>{t(locale, 'tagline')}</p>
-        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-          <Link
-            href="/explore"
-            style={{
-              display: 'inline-block',
-              background: 'var(--bcip-indigo)',
-              color: '#fff',
-              textDecoration: 'none',
-              padding: '0.7rem 1.1rem',
-              borderRadius: 4,
-            }}
-          >
+        <h1 id="home-brand-title" className="home-hero__title">
+          {t(locale, 'brand')}
+        </h1>
+        <p className="home-hero__tagline">{t(locale, 'tagline')}</p>
+        <p className="home-hero__scope">{t(locale, 'heroScope')}</p>
+        <div className="home-hero__cta">
+          <Link href="/explore" className="home-hero__cta-primary">
             {t(locale, 'ctaExplore')}
+          </Link>
+          <Link href="/lasem-guru" className="home-hero__cta-secondary">
+            {t(locale, 'ctaGuidance')}
           </Link>
         </div>
       </section>
 
-      <section className="panel" aria-labelledby="modules-heading">
+      <section className="home-modules" aria-labelledby="modules-heading">
         <h2 id="modules-heading">{t(locale, 'modulesHeading')}</h2>
-        <p style={{ color: 'var(--bcip-muted)', maxWidth: '40rem' }}>{t(locale, 'modulesIntro')}</p>
-        <ul className="motif-list">
+        <p className="home-modules__intro">{t(locale, 'modulesIntro')}</p>
+        <ul className="home-modules__list">
           {modules.map((mod) => (
-            <li key={mod.href} className="motif-item">
-              <h3 style={{ margin: '0 0 0.35rem' }}>
+            <li key={mod.href} className="home-modules__item">
+              <h3>
                 <Link href={mod.href}>{t(locale, mod.titleKey)}</Link>
               </h3>
-              <p style={{ margin: 0, color: 'var(--bcip-muted)' }}>{t(locale, mod.blurbKey)}</p>
+              <p>{t(locale, mod.blurbKey)}</p>
             </li>
           ))}
         </ul>

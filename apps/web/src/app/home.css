@@ -1,0 +1,175 @@
+/* Homepage-only brand surface — keep Motif Explorer styles in explore CSS. */
+
+.home-hero {
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100vh - 4.5rem);
+  display: grid;
+  align-content: center;
+  gap: 1rem;
+  padding: 2.5rem 0 3rem;
+  overflow: hidden;
+}
+
+.home-hero::before {
+  content: '';
+  position: absolute;
+  inset: -20% -10%;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 70% 55% at 85% 20%, rgba(15, 118, 110, 0.12), transparent 55%),
+    radial-gradient(ellipse 55% 45% at 10% 80%, rgba(30, 58, 95, 0.14), transparent 50%),
+    linear-gradient(165deg, rgba(247, 243, 236, 0.2) 0%, transparent 55%);
+  pointer-events: none;
+}
+
+.home-hero__motif {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.07;
+  background-image:
+    linear-gradient(30deg, var(--bcip-indigo) 1px, transparent 1px),
+    linear-gradient(150deg, var(--bcip-indigo) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 118, 110, 0.9) 1px, transparent 1px);
+  background-size:
+    28px 48px,
+    28px 48px,
+    56px 56px;
+  mask-image: linear-gradient(180deg, #000 20%, transparent 92%);
+  animation: home-motif-drift 28s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes home-motif-drift {
+  from {
+    background-position:
+      0 0,
+      0 0,
+      0 0;
+  }
+  to {
+    background-position:
+      56px 96px,
+      -56px 96px,
+      28px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero__motif {
+    animation: none;
+  }
+}
+
+.home-hero__mark {
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 7vw, 4.6rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.05;
+  margin: 0;
+  color: var(--bcip-indigo);
+}
+
+.home-hero__title {
+  font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+  font-weight: 600;
+  margin: 0;
+  max-width: 22ch;
+  color: var(--bcip-ink);
+}
+
+.home-hero__tagline {
+  max-width: 36rem;
+  font-size: 1.125rem;
+  color: var(--bcip-muted);
+  margin: 0;
+}
+
+.home-hero__scope {
+  margin: 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bcip-focus);
+}
+
+.home-hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
+
+.home-hero__cta-primary,
+.home-hero__cta-secondary {
+  display: inline-block;
+  text-decoration: none;
+  padding: 0.7rem 1.1rem;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.home-hero__cta-primary {
+  background: var(--bcip-indigo);
+  color: #fff;
+}
+
+.home-hero__cta-primary:hover {
+  background: #162d4a;
+}
+
+.home-hero__cta-secondary {
+  border: 1px solid var(--bcip-border);
+  color: var(--bcip-indigo);
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.home-hero__cta-secondary:hover {
+  border-color: var(--bcip-indigo);
+}
+
+.home-modules {
+  border-top: 1px solid var(--bcip-border);
+  padding-top: 2rem;
+  margin-top: 0.5rem;
+}
+
+.home-modules h2 {
+  margin: 0 0 0.5rem;
+}
+
+.home-modules__intro {
+  color: var(--bcip-muted);
+  max-width: 40rem;
+  margin: 0;
+}
+
+.home-modules__list {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0;
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 720px) {
+  .home-modules__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.home-modules__item {
+  border-left: 3px solid var(--bcip-focus);
+  padding: 0.75rem 0 0.75rem 1rem;
+}
+
+.home-modules__item h3 {
+  margin: 0 0 0.35rem;
+}
+
+.home-modules__item p {
+  margin: 0;
+  color: var(--bcip-muted);
+}

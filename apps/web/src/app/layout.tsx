@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
+import { brandIdentity } from '@/brand/identity';
+import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import { getLocale } from '@/i18n/get-locale';
 import './globals.css';
+import './chrome.css';
 
 export const metadata: Metadata = {
-  title: 'BCIP — Batik Color Intelligence Platform',
-  description:
-    'Multimodal, culturally grounded batik design-intelligence ecosystem. Pilot domain: Batik Lasem.',
+  title: brandIdentity.documentTitleEn,
+  description: brandIdentity.descriptionEn,
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -16,6 +18,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <SiteHeader locale={locale} />
         <main className="shell">{children}</main>
+        <SiteFooter locale={locale} />
       </body>
     </html>
   );

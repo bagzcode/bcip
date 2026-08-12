@@ -1,8 +1,8 @@
 # BCIP Cursor Blueprint Starter Pack
 
-## Batik Color Intelligence Platform
+## BCIP — Batik Design Intelligence Platform
 
-**Product statement:** A multimodal, culturally grounded batik design-intelligence ecosystem connecting heritage data, color science, explainable AI, and fashion application.
+**Product statement:** A multimodal, culturally grounded batik design-intelligence ecosystem connecting heritage motifs, craft knowledge, color science, explainable AI, and fashion application. (Former expansion: Batik Color Intelligence Platform — see `docs/implementation/BATIK_FIRST_REBRAND.md`.)
 
 This pack is designed to be opened as a new project folder in Cursor. It does **not** pretend to be the completed application. It contains the architecture, product specification, data model, delivery plan, Cursor rules, and implementation prompts needed to create the platform in controlled stages.
 

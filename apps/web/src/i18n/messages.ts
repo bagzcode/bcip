@@ -2,8 +2,13 @@ export type Locale = 'en' | 'id';
 
 export const messages = {
   en: {
-    brand: 'Batik Color Intelligence Platform',
-    tagline: 'Heritage data, color science, and design intelligence for Batik Lasem research.',
+    brand: 'Batik Design Intelligence',
+    tagline:
+      'Motifs, craft, color science, guidance, and dress design — governed intelligence for Batik Lasem research.',
+    heroScope: 'Pilot domain: Batik Lasem · Demo content is labelled fictional',
+    footerBlurb:
+      'BCIP connects Motif Explorer, Hue Seer, Lasem Guru, Dress Weaver, Research Lab, and Governance. Color analysis is one module (Hue Seer), not the whole platform.',
+    ctaGuidance: 'Ask Lasem Guru',
     navHome: 'Home',
     navExplore: 'Motif Explorer',
     navHueSeer: 'Hue Seer',
@@ -52,7 +57,7 @@ export const messages = {
     governanceCreatePolicy: 'Create policy',
     governanceCreateClaim: 'Create knowledge claim',
     governanceNoAccess: 'Access denied',
-    ctaExplore: 'Browse demo catalogue',
+    ctaExplore: 'Explore batik motifs',
     exploreTitle: 'Motif Explorer',
     exploreIntro:
       'Browse demo batik motifs, craft stories, artisans, and cloth. Entries are synthetic placeholders for platform testing — not research data and not Batik Lasem meanings.',
@@ -156,11 +161,11 @@ export const messages = {
     language: 'Language',
     modulesHeading: 'Ecosystem modules',
     modulesIntro:
-      'BCIP unifies Motif Explorer, Hue Seer, Lasem Guru, Dress Weaver, Research Lab, and Governance. Phase 0 provides the foundation only.',
+      'BCIP is a batik design-intelligence platform: Motif Explorer, Hue Seer (color), Lasem Guru, Dress Weaver, Research Lab, and Governance — with provenance and access controls throughout.',
     placeholderComing: 'Coming in a later phase. Phase 0 ships the foundation only.',
     hueSeerTitle: 'Hue Seer',
     hueSeerBlurb:
-      'Exploratory batik dye-color prediction plus calibrated vs exploratory sample analysis.',
+      'Color capability: calibrated and exploratory analysis (and dye-process prediction). One module within the batik platform — not the whole brand.',
     hueSeerIntro:
       'Predict exploratory dye blends from process parameters, and inspect demo sample analyses. Live prediction is not calibrated scientific measurement. Results never invent cultural meanings.',
     hueSeerUnavailable: 'Hue Seer data temporarily unavailable. Check database connectivity.',
@@ -243,7 +248,7 @@ export const messages = {
       'Separate workflow: enqueue or inspect sample image analyses with calibrated vs exploratory labels.',
     lasemGuruTitle: 'Lasem Guru',
     lasemGuruBlurb:
-      'Source-grounded bilingual knowledge assistant with citations. Prototype chat UX will be rebuilt on governed retrieval — no invented cultural facts.',
+      'Source-grounded bilingual guidance on batik knowledge with citations — no invented cultural facts.',
     lasemGuruIntro:
       'Ask only about approved DEMO source fragments. Answers refuse when evidence is missing. All content is fictional platform test data — not research or heritage knowledge.',
     lasemGuruPlaceholder: 'Ask a question grounded in demo sources…',
@@ -265,7 +270,7 @@ export const messages = {
     lasemGuruPermission: 'Permission concern',
     dressWeaverTitle: 'Dress Weaver',
     dressWeaverBlurb:
-      'Parametric pattern draft (FreeSewing-style) plus batik motif placement on versioned design JSON.',
+      'Parametric FreeSewing-style pattern draft and batik motif placement on garment flats with versioned design JSON.',
     dressWeaverIntro:
       'Pick a pattern design, edit named measurement sets (seed Bogus), draft with pan/zoom, then place public demo motifs on the garment flat. DEMO / FICTIONAL labels apply to cultural content.',
     dressWeaverDemoProject: 'Demo design projects',
@@ -278,7 +283,7 @@ export const messages = {
     dressWeaverSelectTemplate: 'Garment template',
     dressWeaverCreate: 'Create project',
     researchTitle: 'Research Lab',
-    researchBlurb: 'Quantitative experiments, surveys, and publication exports.',
+    researchBlurb: 'Batik-related experiments, surveys, and publication-grade exports.',
     researchDenied:
       'Research Lab requires a researcher, data steward, or admin role. Sign in with a demo research account.',
     researchUnavailable: 'Research data temporarily unavailable. Check database connectivity.',
@@ -318,13 +323,18 @@ export const messages = {
     governanceTitle: 'Governance Console',
     governanceBlurb: 'Consent, attribution, licensing, access tiers, expert review, and audit.',
     motifExplorerBlurb:
-      'Governed heritage catalogue and discovery (maps from the Storyboard prototype gallery).',
+      'Discover batik motifs, craft context, and governed catalogue entries (demo catalogue for platform testing).',
     filterAll: 'All',
     exploreUnavailable: 'Catalogue temporarily unavailable. Check database connectivity.',
   },
   id: {
-    brand: 'Platform Kecerdasan Warna Batik',
-    tagline: 'Data warisan, sains warna, dan kecerdasan desain untuk riset Batik Lasem.',
+    brand: 'Kecerdasan Desain Batik',
+    tagline:
+      'Motif, kerajinan, sains warna, panduan, dan desain busana — kecerdasan terkelola untuk riset Batik Lasem.',
+    heroScope: 'Domain percontohan: Batik Lasem · Konten demo berlabel fiktif',
+    footerBlurb:
+      'BCIP menghubungkan Motif Explorer, Hue Seer, Lasem Guru, Dress Weaver, Research Lab, dan Governance. Analisis warna adalah satu modul (Hue Seer), bukan seluruh platform.',
+    ctaGuidance: 'Tanya Lasem Guru',
     navHome: 'Beranda',
     navExplore: 'Motif Explorer',
     navHueSeer: 'Hue Seer',
@@ -373,7 +383,7 @@ export const messages = {
     governanceCreatePolicy: 'Buat kebijakan',
     governanceCreateClaim: 'Buat klaim pengetahuan',
     governanceNoAccess: 'Akses ditolak',
-    ctaExplore: 'Lihat katalog demo',
+    ctaExplore: 'Jelajahi motif batik',
     exploreTitle: 'Motif Explorer',
     exploreIntro:
       'Jelajahi motif batik demo, cerita kerajinan, perajin, dan kain. Entri sintetik untuk pengujian platform — bukan data riset dan bukan makna Batik Lasem.',
@@ -477,11 +487,11 @@ export const messages = {
     language: 'Bahasa',
     modulesHeading: 'Modul ekosistem',
     modulesIntro:
-      'BCIP menyatukan Motif Explorer, Hue Seer, Lasem Guru, Dress Weaver, Research Lab, dan Governance. Fase 0 hanya fondasi.',
+      'BCIP adalah platform kecerdasan desain batik: Motif Explorer, Hue Seer (warna), Lasem Guru, Dress Weaver, Research Lab, dan Governance — dengan provenans dan kontrol akses di seluruhnya.',
     placeholderComing: 'Hadir pada fase berikutnya. Fase 0 hanya membangun fondasi.',
     hueSeerTitle: 'Hue Seer',
     hueSeerBlurb:
-      'Prediksi warna celup batik eksploratif plus analisis sampel terkalibrasi vs eksploratif.',
+      'Kapabilitas warna: analisis terkalibrasi dan eksploratif (serta prediksi proses pewarnaan). Satu modul dalam platform batik — bukan seluruh merek.',
     hueSeerIntro:
       'Prediksi campuran celup eksploratif dari parameter proses, dan tinjau analisis sampel demo. Prediksi langsung bukan pengukuran ilmiah terkalibrasi. Hasil tidak mengarang makna budaya.',
     hueSeerUnavailable: 'Data Hue Seer sementara tidak tersedia. Periksa koneksi basis data.',
@@ -565,7 +575,7 @@ export const messages = {
       'Alur terpisah: antre atau tinjau analisis gambar sampel dengan label terkalibrasi vs eksploratif.',
     lasemGuruTitle: 'Lasem Guru',
     lasemGuruBlurb:
-      'Asisten pengetahuan dwibahasa berbasis sumber dengan sitasi. UX chat prototipe akan dibangun ulang — tanpa fakta budaya fiktif.',
+      'Panduan dwibahasa berbasis sumber tentang pengetahuan batik dengan sitasi — tanpa fakta budaya yang dibuat-buat.',
     lasemGuruIntro:
       'Tanya hanya tentang fragmen sumber DEMO yang disetujui. Jawaban ditolak jika bukti kurang. Semua konten fiktif untuk uji platform — bukan data riset atau pengetahuan warisan.',
     lasemGuruPlaceholder: 'Ajukan pertanyaan berbasis sumber demo…',
@@ -587,7 +597,7 @@ export const messages = {
     lasemGuruPermission: 'Masalah izin',
     dressWeaverTitle: 'Dress Weaver',
     dressWeaverBlurb:
-      'Draft pola parametrik (gaya FreeSewing) plus penempatan motif batik pada design JSON berversi.',
+      'Draft pola parametrik gaya FreeSewing dan penempatan motif batik pada flat garmen dengan design JSON berversi.',
     dressWeaverIntro:
       'Pilih desain pola, sunting set pengukuran bernama (seed Bogus), draft dengan pan/zoom, lalu tempatkan motif demo publik pada flat garmen. Label DEMO / FICTIONAL untuk konten budaya.',
     dressWeaverDemoProject: 'Proyek desain demo',
@@ -600,7 +610,7 @@ export const messages = {
     dressWeaverSelectTemplate: 'Templat garmen',
     dressWeaverCreate: 'Buat proyek',
     researchTitle: 'Research Lab',
-    researchBlurb: 'Eksperimen kuantitatif, survei, dan ekspor publikasi.',
+    researchBlurb: 'Eksperimen terkait batik, survei, dan ekspor setara publikasi.',
     researchDenied:
       'Research Lab memerlukan peran peneliti, data steward, atau admin. Masuk dengan akun demo riset.',
     researchUnavailable: 'Data riset sementara tidak tersedia. Periksa koneksi basis data.',
@@ -639,7 +649,8 @@ export const messages = {
     researchNavStudies: 'Semua studi',
     governanceTitle: 'Governance Console',
     governanceBlurb: 'Persetujuan, atribusi, lisensi, tingkat akses, tinjauan ahli, dan audit.',
-    motifExplorerBlurb: 'Katalog warisan dan penemuan (dari prototipe Storyboard).',
+    motifExplorerBlurb:
+      'Temukan motif batik, konteks kerajinan, dan entri katalog terkelola (katalog demo untuk uji platform).',
     filterAll: 'Semua',
     exploreUnavailable: 'Katalog sementara tidak tersedia. Periksa koneksi basis data.',
   },
