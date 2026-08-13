@@ -59,4 +59,9 @@ export const auth = new Proxy({} as ReturnType<typeof createAuth>, {
       ? (value as (...args: never[]) => unknown).bind(instance)
       : value;
   },
+  // `toNextJsHandler` uses `"handler" in auth`; without `has`, an empty-target
+  // Proxy reports false and the helper tries to call auth as a function.
+  has(_target, prop) {
+    return Reflect.has(getAuth() as object, prop);
+  },
 });
