@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@bcip/ui';
+import { BrandLogo } from '@/components/brand-logo';
 import { authClient } from '@/lib/auth-client';
 import type { Locale } from '@/i18n/messages';
 import { t } from '@/i18n/messages';
@@ -31,6 +32,9 @@ export function SignInForm({ locale }: { locale: Locale }) {
 
   return (
     <section className="panel" style={{ maxWidth: 420 }}>
+      <p className="auth-brand">
+        <BrandLogo size="auth" />
+      </p>
       <h1>{t(locale, 'signInTitle')}</h1>
       <p style={{ color: 'var(--bcip-muted)' }}>{t(locale, 'authDemoHint')}</p>
       <form onSubmit={onSubmit} style={{ display: 'grid', gap: '0.75rem' }}>

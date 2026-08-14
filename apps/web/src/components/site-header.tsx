@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { LanguageSwitch } from './language-switch';
 import { AuthNav } from './auth-nav';
+import { BrandLogo } from './brand-logo';
 import { t, type Locale } from '@/i18n/messages';
 import { getSession } from '@/lib/session';
 
@@ -23,7 +24,7 @@ export async function SiteHeader({ locale }: { locale: Locale }) {
   return (
     <header className="site-header">
       <Link href="/" className="site-header__brand" aria-label={`${t(locale, 'brand')} (BCIP)`}>
-        <strong className="site-header__acronym">BCIP</strong>
+        <BrandLogo size="header" decorative />
         <span className="site-header__name">{t(locale, 'brand')}</span>
       </Link>
       <nav

@@ -7,6 +7,9 @@ export const brandIdentity = {
   /** Technical / repo acronym — stable across renames. */
   acronym: 'BCIP',
 
+  /** Graphic wordmark (dark canvas). Product name stays batik-first. */
+  logoSrc: '/brand/logo-intelligence.png',
+
   /**
    * Former public expansion (retired on user-facing surfaces).
    * Kept for migration notes and search/replace audits.

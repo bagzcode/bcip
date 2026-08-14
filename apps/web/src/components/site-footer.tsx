@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { BrandLogo } from './brand-logo';
 import { t, type Locale } from '@/i18n/messages';
 
 const moduleLinks = [
@@ -16,7 +17,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
       <div className="site-footer__inner">
         <div>
           <p className="site-footer__brand">
-            <span className="site-footer__acronym">BCIP</span>
+            <BrandLogo size="footer" />
             <span className="site-footer__name">{t(locale, 'brand')}</span>
           </p>
           <p className="site-footer__blurb">{t(locale, 'footerBlurb')}</p>

@@ -9,6 +9,15 @@ import './chrome.css';
 export const metadata: Metadata = {
   title: brandIdentity.documentTitleEn,
   description: brandIdentity.descriptionEn,
+  icons: {
+    icon: brandIdentity.logoSrc,
+    apple: brandIdentity.logoSrc,
+  },
+  openGraph: {
+    title: brandIdentity.documentTitleEn,
+    description: brandIdentity.descriptionEn,
+    images: [{ url: brandIdentity.logoSrc, width: 1024, height: 588, alt: `${brandIdentity.acronym} — ${brandIdentity.displayNameEn}` }],
+  },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

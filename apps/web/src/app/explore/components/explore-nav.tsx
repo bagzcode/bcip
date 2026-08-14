@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import { BrandLogo } from '@/components/brand-logo';
 
 const LINKS = [
   { href: '/explore/motifs', key: 'motifs' as const },
@@ -36,8 +37,9 @@ export function ExploreNav({
   return (
     <header className="me-nav">
       <div className="me-nav__bar">
-        <Link href="/explore" className="me-nav__brand">
-          {brand}
+        <Link href="/explore" className="me-nav__brand" aria-label={brand}>
+          <BrandLogo size="nav" decorative />
+          <span className="me-nav__brand-text">{brand}</span>
         </Link>
         <form className="me-nav__search" onSubmit={onSearch} role="search">
           <label className="sr-only" htmlFor="me-search">
