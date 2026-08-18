@@ -1,0 +1,51 @@
+name: DGX Runner Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test DGX Runner
+
+    runs-on:
+      - self-hosted
+      - Linux
+      - ARM64
+      - dgx-prod
+
+    steps:
+      - name: Verify DGX environment
+        shell: bash
+        run: |
+          set -e
+
+          echo "===== USER ====="
+          whoami
+
+          echo "===== HOST ====="
+          hostname
+
+          echo "===== ARCH ====="
+          uname -m
+
+          echo "===== DOCKER ====="
+          docker version --format 'Client={{.Client.Version}} Server={{.Server.Version}}'
+
+          echo "===== BCIP DIRECTORY ====="
+          cd /home/binus/lecturers/idabagus/hermes-lab/projects/bcip-prod
+          pwd
+
+          echo "===== BCIP STACK ====="
+          docker compose \
+            --env-file .env \
+            -f compose.prod.yaml \
+            ps
+
+          echo "===== BCIP HEALTH ====="
+          curl -fsS http://127.0.0.1:3001/api/health
+
+          echo
+          echo "DGX runner test successful."
