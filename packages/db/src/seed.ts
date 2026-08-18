@@ -1462,7 +1462,7 @@ async function main() {
     mode: 'calibrated' | 'exploratory';
     isCalibrated: boolean;
     assetVersionId: string;
-    sampleId?: string;
+    sampleId?: string | undefined;
     seedKey: string;
     calibration?: Record<string, unknown> | null;
     warnings: string[];

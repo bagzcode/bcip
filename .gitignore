@@ -27,3 +27,5 @@ data/restricted
 .docker-desktop.log
 .uvicorn.log
 .pnpm-store
+.local
+*.tsbuildinfo
