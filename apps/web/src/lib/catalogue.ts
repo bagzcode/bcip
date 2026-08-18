@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { eq, inArray, or } from 'drizzle-orm';
 import type { AccessTier, CatalogueListQuery, ReviewStatus } from '@bcip/contracts';
 import {
@@ -179,9 +180,8 @@ function toMotifItem(row: MotifJoinRow): MotifListItem {
   };
 }
 
-async function loadMotifJoinRows(codes?: string[]): Promise<MotifJoinRow[]> {
-  const db = getDb();
-  const base = db
+function motifJoinSelect(db: ReturnType<typeof getDb>) {
+  return db
     .select({
       id: motifs.id,
       publicCode: motifs.publicCode,
@@ -216,11 +216,132 @@ async function loadMotifJoinRows(codes?: string[]): Promise<MotifJoinRow[]> {
     .leftJoin(accessPolicies, eq(motifs.accessPolicyId, accessPolicies.id))
     .leftJoin(artisans, eq(motifs.artisanId, artisans.id))
     .leftJoin(linenItems, eq(motifs.linenItemId, linenItems.id));
+}
 
+async function queryMotifJoinRows(codes?: string[]): Promise<MotifJoinRow[]> {
+  const db = getDb();
+  const base = motifJoinSelect(db);
   if (codes?.length) {
     return base.where(inArray(motifs.publicCode, codes));
   }
   return base;
+}
+
+/** Per-request cache: full motif catalogue join (Motif Explorer hot path). */
+const loadAllMotifJoinRows = cache(async (): Promise<MotifJoinRow[]> => queryMotifJoinRows());
+
+async function loadMotifJoinRows(codes?: string[]): Promise<MotifJoinRow[]> {
+  if (!codes?.length) return loadAllMotifJoinRows();
+  return queryMotifJoinRows(codes);
+}
+
+async function loadVisibleMotifItems(actor: ActorContext): Promise<MotifListItem[]> {
+  const rows = await loadAllMotifJoinRows();
+  const mapped = rows.map(toMotifItem);
+  return filterStoryboardMotifs(actor, mapped, {
+    q: '',
+    regions: [],
+    eras: [],
+    symbolism: [],
+  }) as MotifListItem[];
+}
+
+async function loadArtisanViewByCode(actor: ActorContext, code: string): Promise<ArtisanView | null> {
+  const db = getDb();
+  const rows = await db
+    .select({
+      id: artisans.id,
+      publicCode: artisans.publicCode,
+      displayName: artisans.displayName,
+      bio: artisans.bio,
+      region: artisans.region,
+      originLat: artisans.originLat,
+      originLng: artisans.originLng,
+      visualSeed: artisans.visualSeed,
+      reviewStatus: artisans.reviewStatus,
+      status: artisans.status,
+      isDemoFictional: artisans.isDemoFictional,
+      accessTier: accessPolicies.accessTier,
+    })
+    .from(artisans)
+    .leftJoin(accessPolicies, eq(artisans.accessPolicyId, accessPolicies.id))
+    .where(eq(artisans.publicCode, code))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) return null;
+  const view = toArtisanView(row);
+  if (
+    !resolveStoryboardEntity(actor, {
+      accessTier: view.accessTier,
+      status: view.status,
+      reviewStatus: view.reviewStatus,
+    })
+  ) {
+    return null;
+  }
+  return view;
+}
+
+async function loadLinenViewByCode(actor: ActorContext, code: string): Promise<LinenView | null> {
+  const db = getDb();
+  const rows = await db
+    .select({
+      id: linenItems.id,
+      publicCode: linenItems.publicCode,
+      title: linenItems.title,
+      description: linenItems.description,
+      fiberType: linenItems.fiberType,
+      weaveNotes: linenItems.weaveNotes,
+      region: linenItems.region,
+      visualSeed: linenItems.visualSeed,
+      reviewStatus: linenItems.reviewStatus,
+      status: linenItems.status,
+      isDemoFictional: linenItems.isDemoFictional,
+      accessTier: accessPolicies.accessTier,
+    })
+    .from(linenItems)
+    .leftJoin(accessPolicies, eq(linenItems.accessPolicyId, accessPolicies.id))
+    .where(eq(linenItems.publicCode, code))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) return null;
+  const view = toLinenView(row);
+  if (
+    !resolveStoryboardEntity(actor, {
+      accessTier: view.accessTier,
+      status: view.status,
+      reviewStatus: view.reviewStatus,
+    })
+  ) {
+    return null;
+  }
+  return view;
+}
+
+async function loadMotifsForArtisan(actor: ActorContext, artisanId: string): Promise<MotifListItem[]> {
+  const db = getDb();
+  const rows = await motifJoinSelect(db).where(eq(motifs.artisanId, artisanId));
+  const mapped = rows.map(toMotifItem);
+  return filterStoryboardMotifs(actor, mapped, {
+    q: '',
+    regions: [],
+    eras: [],
+    symbolism: [],
+  }) as MotifListItem[];
+}
+
+async function loadMotifsForLinen(actor: ActorContext, linenItemId: string): Promise<MotifListItem[]> {
+  const db = getDb();
+  const rows = await motifJoinSelect(db).where(eq(motifs.linenItemId, linenItemId));
+  const mapped = rows.map(toMotifItem);
+  return filterStoryboardMotifs(actor, mapped, {
+    q: '',
+    regions: [],
+    eras: [],
+    symbolism: [],
+  }) as MotifListItem[];
 }
 
 function applyListFilters(
@@ -245,12 +366,46 @@ function applyListFilters(
   });
 }
 
+/** Gallery page: list + facet options from one cached catalogue load. */
+export async function listMotifsForGallery(
+  actor: ActorContext,
+  query: CatalogueListQuery,
+): Promise<{
+  items: MotifListItem[];
+  total: number;
+  options: { regions: string[]; eras: string[]; symbolism: string[] };
+}> {
+  const rows = await loadAllMotifJoinRows();
+  const mapped = rows.map(toMotifItem);
+  const visible = filterStoryboardMotifs(actor, mapped, {
+    q: '',
+    regions: [],
+    eras: [],
+    symbolism: [],
+  }) as MotifListItem[];
+  const filtered = applyListFilters(actor, mapped, query);
+  const total = filtered.length;
+  const items = filtered.slice(query.offset, query.offset + query.limit);
+  const regions = [...new Set(visible.map((m) => m.region).filter(Boolean))] as string[];
+  const eras = [...new Set(visible.map((m) => m.era).filter(Boolean))] as string[];
+  const symbolism = [...new Set(visible.flatMap((m) => m.symbolism))];
+  return {
+    items,
+    total,
+    options: {
+      regions: regions.sort(),
+      eras: eras.sort(),
+      symbolism: symbolism.sort(),
+    },
+  };
+}
+
 /** Access-filtered motif list with search/filters. Restricted rows never appear. */
 export async function listMotifs(
   actor: ActorContext,
   query: CatalogueListQuery,
 ): Promise<{ items: MotifListItem[]; total: number }> {
-  const rows = await loadMotifJoinRows();
+  const rows = await loadAllMotifJoinRows();
   const mapped = rows.map(toMotifItem);
   const filtered = applyListFilters(actor, mapped, query);
   const total = filtered.length;
@@ -262,15 +417,7 @@ export async function listFeaturedMotifs(
   actor: ActorContext,
   limit = 1,
 ): Promise<MotifListItem[]> {
-  const { items } = await listMotifs(actor, {
-    q: '',
-    demoOnly: false,
-    regions: [],
-    eras: [],
-    symbolism: [],
-    limit: 48,
-    offset: 0,
-  });
+  const items = await loadVisibleMotifItems(actor);
   const featured = items.filter((m) => m.isFeatured);
   return (featured.length ? featured : items).slice(0, limit);
 }
@@ -279,15 +426,7 @@ export async function listNewAdditionMotifs(
   actor: ActorContext,
   limit = 4,
 ): Promise<MotifListItem[]> {
-  const { items } = await listMotifs(actor, {
-    q: '',
-    demoOnly: false,
-    regions: [],
-    eras: [],
-    symbolism: [],
-    limit: 48,
-    offset: 0,
-  });
+  const items = await loadVisibleMotifItems(actor);
   const storyboard = items.filter((m) => m.publicCode.startsWith('DEMO-SB-'));
   return (storyboard.length ? storyboard : items).slice(0, limit);
 }
@@ -297,15 +436,7 @@ export async function listMotifFilterOptions(actor: ActorContext): Promise<{
   eras: string[];
   symbolism: string[];
 }> {
-  const { items } = await listMotifs(actor, {
-    q: '',
-    demoOnly: false,
-    regions: [],
-    eras: [],
-    symbolism: [],
-    limit: 100,
-    offset: 0,
-  });
+  const items = await loadVisibleMotifItems(actor);
   const regions = [...new Set(items.map((m) => m.region).filter(Boolean))] as string[];
   const eras = [...new Set(items.map((m) => m.era).filter(Boolean))] as string[];
   const symbolism = [...new Set(items.flatMap((m) => m.symbolism))];
@@ -426,21 +557,12 @@ export async function getArtisanByCode(
   actor: ActorContext,
   code: string,
 ): Promise<(ArtisanView & { motifs: MotifListItem[] }) | null> {
-  const { items } = await listArtisans(actor, { limit: 100 });
-  const artisan = items.find((a) => a.publicCode === code) ?? null;
+  const artisan = await loadArtisanViewByCode(actor, code);
   if (!artisan) return null;
-  const { items: motifsForArtisan } = await listMotifs(actor, {
-    q: '',
-    demoOnly: false,
-    regions: [],
-    eras: [],
-    symbolism: [],
-    limit: 100,
-    offset: 0,
-  });
+  const motifsForArtisan = await loadMotifsForArtisan(actor, artisan.id);
   return {
     ...artisan,
-    motifs: motifsForArtisan.filter((m) => m.artisanId === artisan.id),
+    motifs: motifsForArtisan,
   };
 }
 
@@ -494,21 +616,12 @@ export async function getLinenByCode(
   actor: ActorContext,
   code: string,
 ): Promise<(LinenView & { motifs: MotifListItem[] }) | null> {
-  const { items } = await listLinenItems(actor, { limit: 100 });
-  const linen = items.find((l) => l.publicCode === code) ?? null;
+  const linen = await loadLinenViewByCode(actor, code);
   if (!linen) return null;
-  const { items: allMotifs } = await listMotifs(actor, {
-    q: '',
-    demoOnly: false,
-    regions: [],
-    eras: [],
-    symbolism: [],
-    limit: 100,
-    offset: 0,
-  });
+  const motifsForLinen = await loadMotifsForLinen(actor, linen.id);
   return {
     ...linen,
-    motifs: allMotifs.filter((m) => m.linenItemId === linen.id),
+    motifs: motifsForLinen,
   };
 }
 
@@ -804,11 +917,11 @@ export async function getMotifByCode(
   const detail = resolveCatalogueDetail(actor, item);
   if (!detail) return null;
 
-  const [claims, sampleRows, artisanList, linenList] = await Promise.all([
+  const [claims, sampleRows, artisan, linen] = await Promise.all([
     loadClaimsFor(actor, { motifId: item.id }),
     loadSamplesForMotif(actor, item.id),
-    item.artisanCode ? getArtisanByCode(actor, item.artisanCode) : Promise.resolve(null),
-    item.linenCode ? getLinenByCode(actor, item.linenCode) : Promise.resolve(null),
+    item.artisanCode ? loadArtisanViewByCode(actor, item.artisanCode) : Promise.resolve(null),
+    item.linenCode ? loadLinenViewByCode(actor, item.linenCode) : Promise.resolve(null),
   ]);
 
   return {
@@ -816,38 +929,8 @@ export async function getMotifByCode(
     ...detail,
     claims,
     samples: sampleRows,
-    artisan: artisanList
-      ? {
-          id: artisanList.id,
-          publicCode: artisanList.publicCode,
-          displayName: artisanList.displayName,
-          bio: artisanList.bio,
-          region: artisanList.region,
-          originLat: artisanList.originLat,
-          originLng: artisanList.originLng,
-          visualSeed: artisanList.visualSeed,
-          accessTier: artisanList.accessTier,
-          reviewStatus: artisanList.reviewStatus,
-          isDemoFictional: artisanList.isDemoFictional,
-          status: artisanList.status,
-        }
-      : null,
-    linen: linenList
-      ? {
-          id: linenList.id,
-          publicCode: linenList.publicCode,
-          title: linenList.title,
-          description: linenList.description,
-          fiberType: linenList.fiberType,
-          weaveNotes: linenList.weaveNotes,
-          region: linenList.region,
-          visualSeed: linenList.visualSeed,
-          accessTier: linenList.accessTier,
-          reviewStatus: linenList.reviewStatus,
-          isDemoFictional: linenList.isDemoFictional,
-          status: linenList.status,
-        }
-      : null,
+    artisan,
+    linen,
   };
 }
 
@@ -914,12 +997,8 @@ export async function compareSamples(
   codes: string[],
 ): Promise<SampleDetailView[]> {
   const unique = [...new Set(codes.map((c) => c.trim()).filter(Boolean))].slice(0, 4);
-  const results: SampleDetailView[] = [];
-  for (const code of unique) {
-    const sample = await getSampleByCode(actor, code);
-    if (sample) results.push(sample);
-  }
-  return results;
+  const samples = await Promise.all(unique.map((code) => getSampleByCode(actor, code)));
+  return samples.filter((sample): sample is SampleDetailView => sample != null);
 }
 
 export async function buildCatalogueExport(

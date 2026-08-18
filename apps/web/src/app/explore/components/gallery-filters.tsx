@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 type FacetKey = 'regions' | 'eras' | 'symbolism';
 
@@ -12,6 +12,12 @@ function parseList(value: string | null): string[] {
 
 function toggleValue(list: string[], value: string): string[] {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+}
+
+function selectionKey(selected: Record<FacetKey, string[]>): string {
+  return (['regions', 'eras', 'symbolism'] as const)
+    .map((key) => `${key}:${selected[key].join('|')}`)
+    .join(';');
 }
 
 export function GalleryFilters({
@@ -31,8 +37,10 @@ export function GalleryFilters({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState<FacetKey | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const selected = useMemo(
+  const urlSelected = useMemo(
     () => ({
       regions: parseList(searchParams.get('regions')),
       eras: parseList(searchParams.get('eras')),
@@ -41,25 +49,48 @@ export function GalleryFilters({
     [searchParams],
   );
 
-  const activeCount =
-    selected.regions.length + selected.eras.length + selected.symbolism.length;
+  const [pending, setPending] = useState(urlSelected);
 
-  function push(next: typeof selected) {
-    const params = new URLSearchParams(searchParams.toString());
-    for (const key of ['regions', 'eras', 'symbolism'] as const) {
-      if (next[key].length) params.set(key, next[key].join(','));
-      else params.delete(key);
-    }
-    params.delete('offset');
-    router.push(`/explore/motifs?${params.toString()}`);
+  useEffect(() => {
+    setPending(urlSelected);
+  }, [urlSelected]);
+
+  useEffect(
+    () => () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    },
+    [],
+  );
+
+  const activeCount =
+    pending.regions.length + pending.eras.length + pending.symbolism.length;
+
+  function scheduleNavigation(next: typeof pending) {
+    setPending(next);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const key of ['regions', 'eras', 'symbolism'] as const) {
+        if (next[key].length) params.set(key, next[key].join(','));
+        else params.delete(key);
+      }
+      params.delete('offset');
+      startTransition(() => {
+        router.push(`/explore/motifs?${params.toString()}`);
+      });
+    }, 280);
   }
 
   function clearAll() {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     const params = new URLSearchParams(searchParams.toString());
     params.delete('regions');
     params.delete('eras');
     params.delete('symbolism');
-    router.push(`/explore/motifs?${params.toString()}`);
+    setPending({ regions: [], eras: [], symbolism: [] });
+    startTransition(() => {
+      router.push(`/explore/motifs?${params.toString()}`);
+    });
     setOpen(null);
   }
 
@@ -69,8 +100,10 @@ export function GalleryFilters({
     { key: 'symbolism', label: labels.symbolism, values: options.symbolism },
   ];
 
+  const isSyncing = isPending || selectionKey(pending) !== selectionKey(urlSelected);
+
   return (
-    <div className="me-filters">
+    <div className={`me-filters${isSyncing ? ' me-filters--pending' : ''}`}>
       <div className="me-filters__bar">
         {facets.map((facet) => (
           <div key={facet.key} className="me-filters__facet">
@@ -81,8 +114,8 @@ export function GalleryFilters({
               onClick={() => setOpen(open === facet.key ? null : facet.key)}
             >
               {facet.label}
-              {selected[facet.key].length > 0 ? (
-                <span className="me-filters__count">{selected[facet.key].length}</span>
+              {pending[facet.key].length > 0 ? (
+                <span className="me-filters__count">{pending[facet.key].length}</span>
               ) : null}
             </button>
             {open === facet.key ? (
@@ -94,11 +127,11 @@ export function GalleryFilters({
                     <label key={value} className="me-filters__option">
                       <input
                         type="checkbox"
-                        checked={selected[facet.key].includes(value)}
+                        checked={pending[facet.key].includes(value)}
                         onChange={() =>
-                          push({
-                            ...selected,
-                            [facet.key]: toggleValue(selected[facet.key], value),
+                          scheduleNavigation({
+                            ...pending,
+                            [facet.key]: toggleValue(pending[facet.key], value),
                           })
                         }
                       />

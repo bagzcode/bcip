@@ -27,14 +27,17 @@ export default async function ExploreHomePage() {
   let unavailable = false;
 
   try {
-    [featured, additions] = await Promise.all([
-      listFeaturedMotifs(actor, 1),
-      listNewAdditionMotifs(actor, 4),
-    ]);
+    const featuredPromise = listFeaturedMotifs(actor, 1);
+    const additionsPromise = listNewAdditionMotifs(actor, 4);
+    featured = await featuredPromise;
     const featuredItem = featured[0] ?? null;
-    if (featuredItem) {
-      hero = (await getMotifByCode(actor, featuredItem.publicCode)) ?? featuredItem;
-    }
+    const heroPromise = featuredItem
+      ? getMotifByCode(actor, featuredItem.publicCode)
+      : Promise.resolve(null);
+    [additions, hero] = await Promise.all([
+      additionsPromise,
+      heroPromise.then((detail) => detail ?? featuredItem),
+    ]);
   } catch {
     unavailable = true;
   }

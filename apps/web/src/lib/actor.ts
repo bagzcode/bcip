@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { and, eq } from 'drizzle-orm';
 import { anonymousActor, resolveActorContext, type ActorContext } from '@bcip/domain';
 import { memberships, tierGrants } from '@bcip/db';
@@ -18,7 +19,7 @@ export { buildActorFromDbRows } from './actor-map';
  * const actor = await getActorContext();
  * ```
  */
-export async function getActorContext(): Promise<ActorContext> {
+export const getActorContext = cache(async function getActorContext(): Promise<ActorContext> {
   let userId: string | null = null;
   try {
     const session = await getSession();
@@ -60,4 +61,4 @@ export async function getActorContext(): Promise<ActorContext> {
     }
     return anonymousActor();
   }
-}
+});

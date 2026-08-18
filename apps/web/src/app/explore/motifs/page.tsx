@@ -7,7 +7,7 @@ import { MotifCard } from '@/app/explore/components/motif-card';
 import { getLocale } from '@/i18n/get-locale';
 import { t } from '@/i18n/messages';
 import { getActorContext } from '@/lib/actor';
-import { listMotifFilterOptions, listMotifs } from '@/lib/catalogue';
+import { listMotifsForGallery } from '@/lib/catalogue';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -38,19 +38,16 @@ export default async function MotifGalleryPage({ searchParams }: { searchParams:
     ? parsed.data
     : CatalogueListQuerySchema.parse({ q: '', demoOnly: false });
 
-  let items: Awaited<ReturnType<typeof listMotifs>>['items'] = [];
+  let items: Awaited<ReturnType<typeof listMotifsForGallery>>['items'] = [];
   let total = 0;
   let options = { regions: [] as string[], eras: [] as string[], symbolism: [] as string[] };
   let unavailable = false;
 
   try {
-    const [list, opts] = await Promise.all([
-      listMotifs(actor, query),
-      listMotifFilterOptions(actor),
-    ]);
-    items = list.items;
-    total = list.total;
-    options = opts;
+    const result = await listMotifsForGallery(actor, query);
+    items = result.items;
+    total = result.total;
+    options = result.options;
   } catch {
     unavailable = true;
   }

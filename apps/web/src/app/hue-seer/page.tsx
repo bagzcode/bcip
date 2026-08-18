@@ -15,8 +15,10 @@ export default async function HueSeerPage() {
   let assets: Awaited<ReturnType<typeof listDemoHueSeerAssets>> = [];
   let loadError: string | null = null;
   try {
-    analyses = await listColorAnalyses(actor);
-    assets = await listDemoHueSeerAssets();
+    [analyses, assets] = await Promise.all([
+      listColorAnalyses(actor),
+      listDemoHueSeerAssets(),
+    ]);
   } catch {
     loadError = t(locale, 'hueSeerUnavailable');
   }
