@@ -96,3 +96,141 @@ jobs:
 
           cache-from: type=gha,scope=bcip-${{ matrix.target }}
           cache-to: type=gha,mode=max,scope=bcip-${{ matrix.target }}
+
+  deploy:
+    name: Deploy to DGX
+
+    needs:
+      - publish
+
+    runs-on:
+      - self-hosted
+      - Linux
+      - ARM64
+      - dgx-prod
+
+    environment:
+      name: production
+
+    steps:
+      - name: Deployment information
+        shell: bash
+        run: |
+          echo "========================================"
+          echo "BCIP Production Deployment"
+          echo "========================================"
+          echo "Commit: ${{ github.event.workflow_run.head_sha }}"
+          echo "Runner: $(hostname)"
+          echo "Architecture: $(uname -m)"
+          echo "Date: $(date -Iseconds)"
+
+      - name: Deploy BCIP
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -Eeuo pipefail
+
+          DEPLOY_DIR="/home/binus/lecturers/idabagus/hermes-lab/projects/bcip-prod"
+
+          cd "$DEPLOY_DIR"
+
+          echo "========================================"
+          echo "Pulling production images"
+          echo "========================================"
+
+          docker compose \
+            --env-file .env \
+            -f compose.prod.yaml \
+            pull
+
+          echo "========================================"
+          echo "Running database migrations"
+          echo "========================================"
+
+          docker compose \
+            --env-file .env \
+            -f compose.prod.yaml \
+            run --rm migrate
+
+          echo "========================================"
+          echo "Ensuring MinIO buckets"
+          echo "========================================"
+
+          docker compose \
+            --env-file .env \
+            -f compose.prod.yaml \
+            run --rm object-init
+
+          echo "========================================"
+          echo "Starting BCIP"
+          echo "========================================"
+
+          docker compose \
+            --env-file .env \
+            -f compose.prod.yaml \
+            up -d \
+            --remove-orphans
+
+          echo "========================================"
+          echo "Waiting for BCIP health check"
+          echo "========================================"
+
+          for attempt in $(seq 1 36); do
+
+            if curl -fsS \
+              http://127.0.0.1:3001/api/health \
+              >/dev/null; then
+
+              echo
+              echo "BCIP deployment successful."
+              echo "Release: ${RELEASE_SHA}"
+
+              docker compose \
+                --env-file .env \
+                -f compose.prod.yaml \
+                ps
+
+              exit 0
+            fi
+
+            echo "Attempt ${attempt}/36: waiting..."
+            sleep 5
+          done
+
+          echo
+          echo "ERROR: BCIP failed health check."
+
+          echo
+          echo "===== CONTAINERS ====="
+
+          docker compose \
+            --env-file .env \
+            -f compose.prod.yaml \
+            ps
+
+          echo
+          echo "===== WEB LOGS ====="
+
+          docker compose \
+            --env-file .env \
+            -f compose.prod.yaml \
+            logs --tail=100 web || true
+
+          echo
+          echo "===== AI API LOGS ====="
+
+          docker compose \
+            --env-file .env \
+            -f compose.prod.yaml \
+            logs --tail=100 ai-api || true
+
+          echo
+          echo "===== AI WORKER LOGS ====="
+
+          docker compose \
+            --env-file .env \
+            -f compose.prod.yaml \
+            logs --tail=100 ai-worker || true
+
+          exit 1
