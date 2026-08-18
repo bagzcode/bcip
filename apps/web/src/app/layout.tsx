@@ -7,16 +7,24 @@ import './globals.css';
 import './chrome.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.APP_URL ?? 'http://localhost:3000'),
   title: brandIdentity.documentTitleEn,
   description: brandIdentity.descriptionEn,
   icons: {
-    icon: brandIdentity.logoSrc,
-    apple: brandIdentity.logoSrc,
+    icon: brandIdentity.logoIconSrc,
+    apple: brandIdentity.logoIconSrc,
   },
   openGraph: {
     title: brandIdentity.documentTitleEn,
     description: brandIdentity.descriptionEn,
-    images: [{ url: brandIdentity.logoSrc, width: 1024, height: 588, alt: `${brandIdentity.acronym} — ${brandIdentity.displayNameEn}` }],
+    images: [
+      {
+        url: brandIdentity.logoSrc,
+        width: brandIdentity.logoWidth,
+        height: brandIdentity.logoHeight,
+        alt: `${brandIdentity.acronym} — ${brandIdentity.displayNameEn}`,
+      },
+    ],
   },
 };
 

@@ -17,8 +17,14 @@ export function BrandLogo({
 }) {
   return (
     <span className={`brand-logo brand-logo--${size}`}>
-      {/* Dark-background wordmark; keep PNG as-is (no invert). */}
-      <img src={BRAND_LOGO_SRC} alt={decorative ? '' : brandLogoAlt()} />
+      {/* Tight-cropped dark-canvas wordmark; height-driven sizing preserves aspect ratio. */}
+      <img
+        src={BRAND_LOGO_SRC}
+        alt={decorative ? '' : brandLogoAlt()}
+        width={brandIdentity.logoWidth}
+        height={brandIdentity.logoHeight}
+        decoding="async"
+      />
     </span>
   );
 }

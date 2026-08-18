@@ -9,6 +9,11 @@ export const brandIdentity = {
 
   /** Graphic wordmark (dark canvas). Product name stays batik-first. */
   logoSrc: '/brand/logo-intelligence.png',
+  /** Intrinsic wordmark dimensions — keep in sync with public/brand/logo-intelligence.png. */
+  logoWidth: 774,
+  logoHeight: 79,
+  /** Square crop of the gradient letters for favicons (full wordmark is illegible at 32px). */
+  logoIconSrc: '/brand/logo-intelligence-icon.png',
 
   /**
    * Former public expansion (retired on user-facing surfaces).
