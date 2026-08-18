@@ -28,6 +28,25 @@ services:
       timeout: 5s
       retries: 20
 
+  migrate:
+    image: ${BCIP_MIGRATE_IMAGE:-ghcr.io/bagzcode/bcip-migrate:main}
+    pull_policy: always
+
+    profiles:
+      - tools
+
+    environment:
+      DATABASE_URL: >-
+        postgresql://${POSTGRES_USER:-bcip}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-bcip}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    networks:
+      - bcip_net
+
+    restart: "no"
 
   redis:
     image: redis:8.2-alpine

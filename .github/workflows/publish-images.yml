@@ -37,6 +37,9 @@ jobs:
           - target: ai
             dockerfile: infrastructure/docker/ai.Dockerfile
 
+          - target: migrate
+            dockerfile: infrastructure/docker/migrate.Dockerfile
+
     steps:
       - name: Checkout successful commit
         uses: actions/checkout@v6
