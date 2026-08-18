@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+
+# Node
+node_modules
+**/node_modules
+.next
+**/.next
+dist
+**/dist
+.turbo
+**/.turbo
+coverage
+*.tsbuildinfo
+
+# Python
+.venv
+**/.venv
+venv
+**/venv
+__pycache__
+**/__pycache__
+.pytest_cache
+**/.pytest_cache
+.mypy_cache
+**/.mypy_cache
+.ruff_cache
+**/.ruff_cache
+*.pyc
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Testing
+playwright-report
+test-results
+.playwright-browsers
+
+# OS / IDE
+.DS_Store
+.vscode
+.idea
+
+# Logs
+*.log
+
+# Local project data
+data/restricted
+
+# Misc temporary files
+Terminal Saved Output*.txt
