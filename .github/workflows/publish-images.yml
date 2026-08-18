@@ -98,6 +98,248 @@ jobs:
           cache-to: type=gha,mode=max,scope=bcip-${{ matrix.target }}
 
   deploy:
+    name: Deploy exact release to DGX
+
+    needs:
+      - publish
+
+    runs-on:
+      - self-hosted
+      - Linux
+      - ARM64
+      - dgx-prod
+
+    environment:
+      name: production
+
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Checkout deployment files
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Deployment information
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -Eeuo pipefail
+
+          echo "========================================"
+          echo "BCIP Production Deployment"
+          echo "========================================"
+          echo "Release:      ${RELEASE_SHA}"
+          echo "Runner host:  $(hostname)"
+          echo "Architecture: $(uname -m)"
+          echo "User:         $(whoami)"
+          echo "Time:         $(date -Iseconds)"
+
+      - name: Synchronize deployment files
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          DEPLOY_DIR="/home/binus/lecturers/idabagus/hermes-lab/projects/bcip-prod"
+
+          mkdir -p \
+            "${DEPLOY_DIR}/infrastructure/docker/postgres-init"
+
+          cp compose.prod.yaml \
+            "${DEPLOY_DIR}/compose.prod.yaml"
+
+          cp -a \
+            infrastructure/docker/postgres-init/. \
+            "${DEPLOY_DIR}/infrastructure/docker/postgres-init/"
+
+          echo "Deployment configuration synchronized."
+
+      - name: Prepare release
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -Eeuo pipefail
+
+          DEPLOY_DIR="/home/binus/lecturers/idabagus/hermes-lab/projects/bcip-prod"
+
+          cd "${DEPLOY_DIR}"
+
+          cat > .release.env.next <<EOF
+          BCIP_WEB_IMAGE=ghcr.io/bagzcode/bcip-web:${RELEASE_SHA}
+          BCIP_AI_IMAGE=ghcr.io/bagzcode/bcip-ai:${RELEASE_SHA}
+          BCIP_MIGRATE_IMAGE=ghcr.io/bagzcode/bcip-migrate:${RELEASE_SHA}
+          EOF
+
+          chmod 600 .release.env.next
+
+          echo "Release ${RELEASE_SHA} prepared."
+
+          echo
+          echo "Resolved production images:"
+
+          docker compose \
+            --env-file .env \
+            --env-file .release.env.next \
+            -f compose.prod.yaml \
+            config --images
+
+      - name: Pull exact release
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          cd /home/binus/lecturers/idabagus/hermes-lab/projects/bcip-prod
+
+          docker compose \
+            --env-file .env \
+            --env-file .release.env.next \
+            -f compose.prod.yaml \
+            pull
+
+      - name: Run database migrations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          cd /home/binus/lecturers/idabagus/hermes-lab/projects/bcip-prod
+
+          docker compose \
+            --env-file .env \
+            --env-file .release.env.next \
+            -f compose.prod.yaml \
+            run --rm migrate
+
+      - name: Ensure MinIO buckets
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          cd /home/binus/lecturers/idabagus/hermes-lab/projects/bcip-prod
+
+          docker compose \
+            --env-file .env \
+            --env-file .release.env.next \
+            -f compose.prod.yaml \
+            run --rm object-init
+
+      - name: Deploy release
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          cd /home/binus/lecturers/idabagus/hermes-lab/projects/bcip-prod
+
+          docker compose \
+            --env-file .env \
+            --env-file .release.env.next \
+            -f compose.prod.yaml \
+            up -d \
+            --remove-orphans
+
+      - name: Verify production health
+        id: health
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          cd /home/binus/lecturers/idabagus/hermes-lab/projects/bcip-prod
+
+          echo "Waiting for BCIP..."
+
+          for attempt in $(seq 1 36); do
+
+            if curl -fsS \
+              http://127.0.0.1:3001/api/health \
+              >/dev/null; then
+
+              echo
+              echo "BCIP is healthy."
+
+              docker compose \
+                --env-file .env \
+                --env-file .release.env.next \
+                -f compose.prod.yaml \
+                ps
+
+              exit 0
+            fi
+
+            echo "Health attempt ${attempt}/36..."
+            sleep 5
+          done
+
+          echo
+          echo "BCIP failed production health check."
+          exit 1
+
+      - name: Commit successful release
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -Eeuo pipefail
+
+          cd /home/binus/lecturers/idabagus/hermes-lab/projects/bcip-prod
+
+          if [ -f .release.env ]; then
+            cp .release.env .release.env.previous
+            chmod 600 .release.env.previous
+          fi
+
+          mv .release.env.next .release.env
+          chmod 600 .release.env
+
+          printf '%s\n' "${RELEASE_SHA}" > .release-sha
+
+          echo "Production release committed:"
+          echo "${RELEASE_SHA}"
+
+      - name: Show diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          cd /home/binus/lecturers/idabagus/hermes-lab/projects/bcip-prod
+
+          echo "===== CONTAINERS ====="
+
+          docker compose \
+            --env-file .env \
+            --env-file .release.env.next \
+            -f compose.prod.yaml \
+            ps || true
+
+          echo
+          echo "===== WEB LOGS ====="
+
+          docker compose \
+            --env-file .env \
+            --env-file .release.env.next \
+            -f compose.prod.yaml \
+            logs --tail=150 web || true
+
+          echo
+          echo "===== AI API LOGS ====="
+
+          docker compose \
+            --env-file .env \
+            --env-file .release.env.next \
+            -f compose.prod.yaml \
+            logs --tail=150 ai-api || true
+
+          echo
+          echo "===== AI WORKER LOGS ====="
+
+          docker compose \
+            --env-file .env \
+            --env-file .release.env.next \
+            -f compose.prod.yaml \
+            logs --tail=150 ai-worker || true
+
+  deploy:
     name: Deploy to DGX
 
     needs:
