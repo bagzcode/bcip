@@ -1,0 +1,249 @@
+name: bcip
+
+services:
+
+  postgres:
+    image: pgvector/pgvector:pg18
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bcip}
+      POSTGRES_USER: ${POSTGRES_USER:-bcip}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./infrastructure/docker/postgres-init:/docker-entrypoint-initdb.d:ro
+
+    networks:
+      - bcip_net
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-bcip} -d ${POSTGRES_DB:-bcip}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+
+  redis:
+    image: redis:8.2-alpine
+    restart: unless-stopped
+
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+
+    volumes:
+      - redis_data:/data
+
+    networks:
+      - bcip_net
+
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+
+  object-storage:
+    image: minio/minio:RELEASE.2025-07-23T15-54-02Z
+    restart: unless-stopped
+
+    command:
+      - server
+      - /data
+      - --console-address
+      - ":9001"
+
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:?S3_ACCESS_KEY is required}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?S3_SECRET_KEY is required}
+
+    volumes:
+      - object_data:/data
+
+    networks:
+      - bcip_net
+
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:9000/minio/health/live
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+
+  ai-api:
+    image: ${BCIP_AI_IMAGE:-ghcr.io/bagzcode/bcip-ai:main}
+    pull_policy: always
+    restart: unless-stopped
+
+    command:
+      - uvicorn
+      - bcip_ai.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+
+    environment:
+      REDIS_URL: redis://redis:6379/0
+
+      DATABASE_URL: >-
+        postgresql://${POSTGRES_USER:-bcip}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-bcip}
+
+      AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:?AI_SERVICE_TOKEN is required}
+
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+
+      S3_ENDPOINT: http://object-storage:9000
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+      postgres:
+        condition: service_healthy
+
+    networks:
+      - bcip_net
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live')"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+
+  ai-worker:
+    image: ${BCIP_AI_IMAGE:-ghcr.io/bagzcode/bcip-ai:main}
+    pull_policy: always
+    restart: unless-stopped
+
+    command:
+      - celery
+      - -A
+      - bcip_ai.worker.app
+      - worker
+      - --loglevel=INFO
+
+    environment:
+      REDIS_URL: redis://redis:6379/0
+
+      DATABASE_URL: >-
+        postgresql://${POSTGRES_USER:-bcip}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-bcip}
+
+      AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:?AI_SERVICE_TOKEN is required}
+
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+
+      S3_ENDPOINT: http://object-storage:9000
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+      postgres:
+        condition: service_healthy
+
+      ai-api:
+        condition: service_started
+
+    networks:
+      - bcip_net
+
+
+  web:
+    image: ${BCIP_WEB_IMAGE:-ghcr.io/bagzcode/bcip-web:main}
+    pull_policy: always
+    restart: unless-stopped
+
+    environment:
+      NODE_ENV: production
+
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+
+      APP_URL: ${APP_URL}
+
+      DATABASE_URL: >-
+        postgresql://${POSTGRES_USER:-bcip}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-bcip}
+
+      REDIS_URL: redis://redis:6379/0
+
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is required}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+
+      AI_SERVICE_URL: http://ai-api:8000
+      AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:?AI_SERVICE_TOKEN is required}
+
+      S3_ENDPOINT: http://object-storage:9000
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET_PRIVATE: ${S3_BUCKET_PRIVATE:-bcip-private}
+      S3_BUCKET_PUBLIC: ${S3_BUCKET_PUBLIC:-bcip-public}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?S3_ACCESS_KEY is required}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?S3_SECRET_KEY is required}
+      S3_FORCE_PATH_STYLE: "true"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+      redis:
+        condition: service_healthy
+
+      ai-api:
+        condition: service_healthy
+
+      object-storage:
+        condition: service_healthy
+
+    ports:
+      - "127.0.0.1:3001:3000"
+
+    networks:
+      - bcip_net
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://127.0.0.1:3000/api/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+
+
+volumes:
+  postgres_data:
+  redis_data:
+  object_data:
+
+
+networks:
+  bcip_net:
+    driver: bridge
